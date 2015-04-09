@@ -1,0 +1,54 @@
+//KOS
+// Given a Direction tuple like any of the examples
+// below:
+// Up. North. R(100,32,0), Q(1,0,0,30) HEADING 30 by 10
+//
+// Calculate what that direction would be if expressed
+// as a unit vector instead.
+// 
+// This is accomplished by performing the matrix rotation
+// on a vector that begins as V(1,0,0) and seeing what
+// the result is.
+//
+// 
+// Because you can't pass things out of a program,
+// global variables must be used here for the output.
+// INPUT:  1 parameter: the Direction vector.
+// OUTPUT: tfUnit, a Vector containing the xyz coords of
+// the output.
+//
+// All "local" variables begin with "tf" to help
+// prevent them from clashing with the other
+// variables you might have used in the global
+// namespace of KOS.
+
+declare parameter tfDir.
+
+// Rotation angles for rotation matrix:
+set tfA to tfDir:yaw.
+set tfCosA to cos(tfA).
+set tfSinA to sin(tfA).
+
+set tfB to tfDir:pitch.
+set tfCosB to cos(tfB).
+set tfSinB to sin(tfB).
+
+set tfC to tfDir:roll.
+set tfCosC to cos(tfC).
+set tfSinC to sin(tfC).
+
+set tf11 to tfCosA*tfCosC + tfSinA*tfSinB*tfSinC .
+set tf21 to tfCosC*tfSinA*tfSinB - tfCosA*tfSinC .
+set tf31 to tfCosB*tfSinA .
+set tf12 to tfCosB*tfSinC .
+set tf22 to tfCosB*tfCosC .
+set tf32 to 0-tfSinB .
+set tf13 to tfCosA*tfSinB*tfSinC - tfCosC*tfSinA .
+set tf23 to tfSinA*tfSinC + tfCosA*tfCosC*tfSinB .
+set tf33 to tfCosA*tfCosB .
+set tfV to V( 0,0,1 ).
+
+set tfUnit to V(
+  tf11*tfV:x + tf21*tfV:y + tf31*tfV:z ,
+  tf12*tfV:x + tf22*tfV:y + tf32*tfV:z ,
+  tf13*tfV:x + tf23*tfV:y + tf33*tfV:z ) .

@@ -1,0 +1,27 @@
+lock munP to mun:position-body:position.
+lock munV to mun:velocity.
+lock minmP to minmus:position-body:position.
+lock minmV to minmus:velocity.
+lock shipP to body:position*-1.
+lock shipV to velocity:orbit.
+
+print " ---------------------------  " at (0,0).
+print "  Planetary phase angle       " at (0,1).
+print " ---------------------------  " at (0,2).
+print "    Ship->Mun:                " at (0,3).
+print " Ship->Minmus:                " at (0,4).
+print "  Mun->Minmus:                " at (0,5).
+print "  Minmus->Mun:                " at (0,6).
+print " ---------------------------  " at (0,7).
+set prpos to 14.
+until 0 {
+    run getPhaseAngleCO(shipP,shipV,munP,munV).
+    set x to round(phaseAngle,3). print x+"         " at (prpos,3).
+    run getPhaseAngleCO(shipP,shipV,minmP,minmV).    
+    set x to round(phaseAngle,3). print x+"         " at (prpos,4).    
+    run getPhaseAngleCO(munP,munV,minmP,minmV).
+    set x to round(phaseAngle,3). print x+"         " at (prpos,5).
+    run getPhaseAngleCO(minmP,minmV,munP,munV).
+    set x to round(phaseAngle,3). print x+"         " at (prpos,6).
+}
+

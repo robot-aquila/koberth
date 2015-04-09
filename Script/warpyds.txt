@@ -1,0 +1,3 @@
+declare parameter y,d,s.
+set dt to (y*365+d)*21600 + s.
+run warpto(time:seconds+dt).

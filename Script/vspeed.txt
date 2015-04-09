@@ -1,0 +1,6 @@
+declare parameter vspeed. // wanted vertical speed m/s
+set kg to mass*1000.
+set Fg to 6.67384E-11*body:mass*kg/(body:radius+altitude)^2.
+set g to Fg/kg.
+set Tmax to maxthrust/mass.
+set tv to (g-verticalspeed+vspeed)/Tmax.

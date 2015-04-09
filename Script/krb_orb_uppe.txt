@@ -1,0 +1,18 @@
+print "rising periapsis".
+if  periapsis < 75000 {
+   wait until eta:apoapsis < 60.
+   sas off.
+   lock steering to prograde.
+   lock throttle to 1.
+   wait until periapsis > 75000.
+   lock throttle to 0.
+}.
+print "the maneuver finished".
+
+
+
+
+
+
+
+

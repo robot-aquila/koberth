@@ -1,0 +1,38 @@
+declare parameter dest.
+
+print "                                    " at (0,0).
+print " Stats for: "+dest:name+"           " at (0,1).
+print "  Phase angle:                      " at (0,2).
+print "Relative pos.:                      " at (0,3).
+print "       Status:                      " at (0,4).
+print "                                    " at (0,5).
+set sps to "                      ".
+set prpos to 15.
+
+lock destP to dest:position-body:position.
+lock destV to dest:velocity.
+lock initP to body:position*-1.
+lock initV to velocity:orbit.
+lock initIsLower to destP:mag-initP:mag.
+
+set index to 50.
+set pi to constant():pi.
+set rad2deg to 180/pi.
+
+until index=0 {
+    run getPhaseAngleCO(initP,initV,destP,destV).
+    
+    set x to round(phaseAngle*rad2deg,4).   print x+sps at (prpos,2).
+    if phaseAngle>pi {
+        print "behind"+sps at (prpos,3).
+        if initIsLower>0 { print "escaping" at (prpos,4). }
+        if initIsLower<0 { print "overtakes me" at (prpos,4). }
+    }  
+    if phaseAngle<=pi {
+        print "ahead"+sps at (prpos,3).
+        if initIsLower>0 { print "overtaking" at (prpos,4). }
+        if initIsLower<0 { print "escapes of me" at (prpos,4). }
+    }
+    
+    set index to index-1.
+}

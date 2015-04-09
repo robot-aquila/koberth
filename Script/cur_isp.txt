@@ -1,0 +1,12 @@
+if debug { print "D: calculate stage Isp". }
+set isp to 0.
+set Tsum to 0.
+set d to 0.
+list engines in tmp.
+for eng in tmp {
+ if eng:isp != 0 {
+  set Tsum to Tsum+eng:maxthrust.
+  set d to d+(eng:maxthrust/eng:isp). 
+ }.
+}.
+if d > 0 { set isp to Tsum/d. }.

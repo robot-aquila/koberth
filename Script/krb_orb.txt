@@ -1,0 +1,19 @@
+until 0 {
+   if eta:periapsis > eta:apoapsis {
+      print "start from periapsis rising".
+      run kerbin-orbit-uppe.
+      run kerbin-orbit-upap.
+      break.
+   }.
+   print "start from apoapsis rising".
+   run kerbin-orbit-upap.
+   run kerbin-orbit-uppe.
+   break.
+}.
+print "the orbit has been corrected".
+
+
+
+
+
+

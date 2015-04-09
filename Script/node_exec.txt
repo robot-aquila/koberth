@@ -1,0 +1,50 @@
+// Execute maneuver node.
+// TODO: The fair implementation based on duration of the burn.
+// Thanks for some ideas from: http://ksp.baldev.de/kos/mtkv2/exenode.txt
+set nd to nextnode.
+run msg("Node in: " + round(nd:eta) + "s, DeltaV: " + round(nd:deltav:mag)).
+set maxda to maxthrust/mass.
+run msg("Max DeltaA for engine: " + round(maxda)).
+run burn_dur(nd:deltav:mag).
+run msg("Duration of burn: " + round(dur)).
+run msg("Warping to maneuver...").
+run warpfor(nd:eta - dur/2 - 45).
+run msg("Turning ship to burn direction").
+sas off.
+rcs on.
+lock np to R(0,0,0) * nd:deltav.
+lock steering to np.
+wait until abs(np:pitch-facing:pitch) < 0.1 and abs(np:yaw-facing:yaw) < 0.1.
+rcs off.
+run warpfor(nd:eta - dur/2 - 15).
+
+// TODO: make this a much fairly
+run msg("Orbital burn start " + round(nd:eta) + "s before node ETA.").
+// lock steering to node:prograde which wanders off at small deltav
+if nd:deltav:mag > 2*maxda {
+ when nd:deltav:mag < 2*maxda then {
+  run msg("Reducing throttle, deltav " + round(nd:deltav:mag) + ", fuel:" + round(stage:liquidfuel)).
+  // continue to accelerate node:deltav
+  set np to R(0,0,0) * nd:deltav.
+ }
+}
+
+set tvar to 0.
+lock throttle to tvar.
+until nd:deltav:mag < 1 and stage:liquidfuel > 0 {
+ set da to maxthrust*throttle/mass.
+ set tset to nd:deltav:mag * mass / maxthrust.
+ if nd:deltav:mag < 2*da and tset > 0.1 {
+  set tvar to tset.
+ }
+ if nd:deltav:mag > 2*da {
+  set tvar to 1.
+ }
+}
+// compensate 1m/s due to "until" stopping short; nd:deltav:mag never gets to 0!
+if stage:liquidfuel > 0 {
+ wait 1/da.
+}
+lock throttle to 0.
+unlock steering.
+run msg("The maneuver has been finished").

@@ -1,0 +1,12 @@
+// Out: deltav - for burn to change orbit
+declare parameter alt, node_alt.
+
+set rb to body:radius.
+set vom to velocity:orbit:mag.
+set r to rb + altitude.
+set r2 to rb + node_alt.
+set va to sqrt( vom^2 + 2*body:mu*(1/r2 - 1/r) ).
+set a to (periapsis + 2*rb + apoapsis)/2.
+set a2 to (alt + 2*rb + node_alt)/2.
+set v2 to sqrt( vom^2 + (body:mu * (2/r2 - 2/r + 1/a - 1/a2 ) ) ).
+set deltav to v2 - va.

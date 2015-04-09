@@ -1,0 +1,12 @@
+// Тестирование скрипта определения расстояния по графическим координатам.
+clearscreen.
+set kscP to latlng(-0.04873752, -74.72407531). // Координаты ККЦ.
+set kscA to 70. // Высота ККЦ на взлетке
+lock P2 to latlng(latitude, longitude).
+lock A2 to altitude.
+until ship:liquidfuel <= 0 {
+    run geo_dist(kerbin, kscP, kscA, P2, A2).
+    set geoDist to round(geoDist/1000, 3).
+    print "Distance to KSC: " + geoDist + " km." at (0,0).
+}
+

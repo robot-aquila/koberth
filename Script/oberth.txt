@@ -1,0 +1,23 @@
+// Дано: Орбита над Кербином 300км.
+// Задача: Выполнить уход на параболическую с 300км,
+// Расчитать DV отдельно для ухода обычным способом и по Оберту.
+
+set r1 to kerbin:radius+300000.         // PE
+set Vorb to sqrt(kerbin:mu/r1).         // Vorbital = 1980m/s
+set Vesc to sqrt(kerbin:mu*2/r1).       // Vescape = 2801m/s
+set DVjustBurnPrograde to Vesc-Vorb.    // DVescape 2801-1980=821m/s
+
+// Для Оберта сначала поднимаем орбиту скажем до 8Mm
+set r2 to 8000000.  // AP
+set DVupAP to sqrt(kerbin:mu/r1)*(sqrt(2*r2/(r1+r2))-1).    // 675m/s
+set SMA to (r1+r2)/2.                       // теперь большая полуось 4450Mm
+set Vap to sqrt(kerbin:mu*((2/r2)-(1/SMA))).// скорость в апоцентре 298m/s
+
+// Опускаем PE до 80km
+set SMA to (kerbin:radius+80000+r2)/2.
+set VapToDnPE to sqrt(kerbin:mu*((2/r2)-(1/SMA))).  // надо сделать а апоцентре
+set DVdnPE to VapToDnPe-Vap.    // в апоцентре жгем -35.80m/s
+
+// Дальше ?
+
+

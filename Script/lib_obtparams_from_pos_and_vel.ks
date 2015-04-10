@@ -24,12 +24,19 @@
 // - LAN angle is mismatched with the KOS-given value. 
 //   Looking to vectors, value calculated by the library is correct.
 //   lan_ingame_offset:
-//   Kerbin: 245.7166 (but ~123 degrees at hyperbolic)
-//   Kerbol: ~122 (123 ?)
+//                  LIB     KOS     DIF
+//   Kerbin:
+//      Y1D106      247     308     299
+//      Y1D106       86     147     299
+//      Y1D106      320      21     299
+//      Y1D106      192     308     244
+//   Mun:
+//
+//   Kerbol:
+//      Y1D106      335      85     250
+//
 
 declare parameter posVec, velVec, mu.
-set TWO_PI to constant():PI ^ 2.
-run lib_obtparams_empty.
 
 // Swap Y and Z coordinate
 set posVec to v(posVec:x, posVec:z, posVec:y).
@@ -61,6 +68,10 @@ if nodeVec:y < 0 { set lan to 360 - lan. }
 set aop to arccos(vdot(nodeVec, eVec) / e). // Argument of periapsis, Eq. 5.28
 if eVec:z < 0 { set aop to 360 - aop. }
 
+set trueAnomaly to arccos((eVec * posVec) / (e * r)). // True anomaly, Eq. 5.29
+if posVec * velVec < 0 { set trueAnomaly to 360 - trueAnomaly. }
+
+run lib_obtparams_empty.
 set retval[OBTP_IS_HYPERBOLIC] to hyperbolic.
 set retval[OBTP_INCL] to i.
 set retval[OBTP_ECC] to e.
@@ -70,7 +81,7 @@ set retval[OBTP_PE] to a * (1 - e).
 set retval[OBTP_AP] to a * (1 + e).
 set retval[OBTP_ARG_OF_PE] to aop.
 set retval[OBTP_LAN] to lan.
-//set retval[OBTP_TRUE_ANOMALY] to ???.
-//set retval[OBTP_MEAN_ANOMALY] to ???.
-//set retval[OBTP_PERIOD] to ???.
+set retval[OBTP_TRUE_ANOMALY] to trueAnomaly.
+// http://en.wikipedia.org/wiki/Orbital_period
+set retval[OBTP_PERIOD] to constant():PI * 2 * sqrt(abs(a)^3 / mu).
 

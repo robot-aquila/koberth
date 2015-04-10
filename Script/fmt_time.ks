@@ -1,5 +1,5 @@
 // Format time in seconds to human-readable string.
-// Output: fmtTime
+// Output: retval
 declare parameter time2format. // time in seconds
 // 1 year = ??? days = ????????????????????????????
 //            1  day = 6 hours = 360 mins = 21600 s
@@ -23,4 +23,4 @@ set fmtTime to fmtTime+fmtH+":".
 if fmtM< 10 { set fmtTime to fmtTime+"0". }
 set fmtTime to fmtTime+fmtM+":".
 if fmtS< 10 { set fmtTime to fmtTime+"0". }
-set fmtTime to fmtTime+fmtS.
+set retval to fmtTime+fmtS.

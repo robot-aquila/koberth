@@ -26,9 +26,8 @@ if not lib_obtparams_empty_const_initialized {
     set OBTP_ARG_OF_PE          to 8.
     set OBTP_LAN                to 9.
     set OBTP_TRUE_ANOMALY       to 10.
-    set OBTP_MEAN_ANOMALY       to 11.
 
-    set OBTP_STRUCTURE_SIZE     to 12.
+    set OBTP_STRUCTURE_SIZE     to 11.
     set lib_obtparams_empty_const_initialized to 1.
 }
 

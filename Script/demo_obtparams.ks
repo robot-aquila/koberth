@@ -19,11 +19,13 @@ print "  Semi-major axis:                         "+sps at (0,10).
 print "  Semi-minor axis:                         "+sps at (0,11).
 print "              LAN:                         "+sps at (0,12).
 print "   Argument of PE:                         "+sps at (0,13).
-print "-------------------------------------------"+sps at (0,14).
-print " Press AG9 to exit. If AG is not working   "+sps at (0,15).
-print " check the kOS window it must be unfocused."+sps at (0,16).
-print " AG is not working in the map mode.        "+sps at (0,17).
-print "-------------------------------------------"+sps at (0,18).
+print "     True Anomaly:                         "+sps at (0,14).
+print "   Orbital period:                         "+sps at (0,15).
+print "-------------------------------------------"+sps at (0,16).
+print " Press AG9 to exit. If AG is not working   "+sps at (0,17).
+print " check the kOS window it must be unfocused."+sps at (0,18).
+print " AG is not working in the map mode.        "+sps at (0,19).
+print "-------------------------------------------"+sps at (0,20).
 
 // Don't use the locks cuz is possible to face inconsistent state at calculation
 //lock myPosition to ship:position - ship:body:position.
@@ -36,9 +38,9 @@ on ag9 {
     set exit to 1.
 }
 
-//lock origin to ship:body:position.
-set origin to v(0,0,0).
-set edge to 2000000.
+lock origin to ship:body:position.
+//set origin to v(0,0,0).
+lock edge to kosOrbit:apoapsis + body:radius.
 set drawAngularMomentum to VecDrawArgs(origin, v(1,0,0), rgb(1,0,0), "Angular Momentum", 1, true).
 set drawNodeVector to VecDrawArgs(origin, v(1,0,0), rgb(0,1,0), "Ascending node", 1, true).
 set drawEccVector to VecDrawArgs(origin, v(1,0,0), rgb(0,0,1), "Eccentricity vector", 1, true).
@@ -58,7 +60,7 @@ until exit=1 {
     set drawAngularMomentum:start to origin.
     set drawNodeVector:vec to v(nodeVec:x, nodeVec:z, nodeVec:y) * edge.
     set drawNodeVector:start to origin.
-    set drawEccVector:vec to v(eVec:x, eVec:z, eVec:y):normalized * edge.
+    set drawEccVector:vec to v(eVec:x, eVec:z, eVec:y):normalized * (kosOrbit:periapsis + body:radius).
     set drawEccVector:start to origin.
     set xAxis:start to origin.
     set yAxis:start to origin.
@@ -77,31 +79,42 @@ until exit=1 {
     set row to row + 1.
 
     print round(myOrbit[OBTP_AP] - body:radius, prec) + sps at (col1, row).
-    print round(kosOrbit:APOAPSIS, prec) at (col2, row).
+    print round(kosOrbit:APOAPSIS, prec) + sps at (col2, row).
     set row to row + 1.
 
-    print round(myOrbit[OBTP_INCL], prec) at (col1, row).
-    print round(kosOrbit:INCLINATION, prec) at (col2, row).
+    print round(myOrbit[OBTP_INCL], prec) + sps at (col1, row).
+    print round(kosOrbit:INCLINATION, prec) + sps at (col2, row).
     set row to row + 1.
 
     print round(myOrbit[OBTP_ECC], prec) + sps at (col1, row).
     print round(kosOrbit:ECCENTRICITY, prec) + sps at (col2, row).
     set row to row + 1.
 
-    print round(myOrbit[OBTP_SEMIMAJOR_AXIS], prec) at (col1, row).
-    print round(kosOrbit:SEMIMAJORAXIS, prec) at (col2, row).
+    print round(myOrbit[OBTP_SEMIMAJOR_AXIS], prec) + sps at (col1, row).
+    print round(kosOrbit:SEMIMAJORAXIS, prec) + sps at (col2, row).
     set row to row + 1.
 
-    print round(myOrbit[OBTP_SEMIMINOR_AXIS], prec) at (col1, row).
-    print round(kosOrbit:SEMIMINORAXIS, prec) at (col2, row).
+    print round(myOrbit[OBTP_SEMIMINOR_AXIS], prec) + sps at (col1, row).
+    print round(kosOrbit:SEMIMINORAXIS, prec) + sps at (col2, row).
     set row to row + 1.
 
-    print round(myOrbit[OBTP_LAN], prec) at (col1, row).
-    print round(kosOrbit:LAN, prec) at (col2, row).
+    print round(myOrbit[OBTP_LAN], prec) + sps at (col1, row).
+    print round(kosOrbit:LAN, prec) + sps at (col2, row).
     set row to row + 1.
 
-    print round(myOrbit[OBTP_ARG_OF_PE], prec) at (col1, row).
-    print round(kosOrbit:ARGUMENTOFPERIAPSIS, prec) at (col2, row).
+    print round(myOrbit[OBTP_ARG_OF_PE], prec) + sps at (col1, row).
+    print round(kosOrbit:ARGUMENTOFPERIAPSIS, prec) + sps at (col2, row).
+    set row to row + 1.
+
+    print round(myOrbit[OBTP_TRUE_ANOMALY], prec) + sps at (col1, row).
+    print round(kosOrbit:TRUEANOMALY, prec) + sps at (col2, row).
+    set row to row + 1.
+
+    run fmt_time(myOrbit[OBTP_PERIOD]).
+    //set retval to myOrbit[OBTP_PERIOD].
+    print retval + sps at (col1, row).
+    run fmt_time(kosOrbit:PERIOD).
+    print retval + sps at (col2, row).
     set row to row + 1.
 
     wait 1.

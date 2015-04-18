@@ -4,7 +4,7 @@
 // Arguments:
 // 1 - position vector
 // 2 - velocity vector
-// 3 - mu
+// 3 - the body of origin
 // Return: retval - the orbit params structure
 // -----------------------------------------------------------------------------
 // The equations mostly from this page (based on):
@@ -30,18 +30,20 @@
 //      Y1D106       86     147     299
 //      Y1D106      320      21     299
 //      Y1D106      192     308     244
+//      Y1D107       53     177     236     hyperbolic
 //   Mun:
-//
+//      Y1D107      124     248     236     hyperbolic
+//      Y1D107      124     248     236
 //   Kerbol:
 //      Y1D106      335      85     250
 //
 
-declare parameter posVec, velVec, mu.
+declare parameter posVec, velVec, originBody.
 
 // Swap Y and Z coordinate
 set posVec to v(posVec:x, posVec:z, posVec:y).
 set velVec to v(velVec:x, velVec:z, velVec:y).
-
+set mu to originBody:mu.
 set r to posVec:mag. // Radius
 set v to velVec:mag. // Scalar velocity
 set h to vcrs(posVec, velVec). // Specific angular momentum, Eq. 5.21
@@ -72,16 +74,20 @@ set trueAnomaly to arccos((eVec * posVec) / (e * r)). // True anomaly, Eq. 5.29
 if posVec * velVec < 0 { set trueAnomaly to 360 - trueAnomaly. }
 
 run lib_obtparams_empty.
+set retval[OBTP_ORIGIN] to originBody.
 set retval[OBTP_IS_HYPERBOLIC] to hyperbolic.
 set retval[OBTP_INCL] to i.
 set retval[OBTP_ECC] to e.
 set retval[OBTP_SEMIMAJOR_AXIS] to a.
 set retval[OBTP_SEMIMINOR_AXIS] to b.
-set retval[OBTP_PE] to a * (1 - e).
-set retval[OBTP_AP] to a * (1 + e).
+set retval[OBTP_PE] to a * (1 - e) - originBody:radius.
+set retval[OBTP_AP] to a * (1 + e) - originBody:radius.
 set retval[OBTP_ARG_OF_PE] to aop.
 set retval[OBTP_LAN] to lan.
-set retval[OBTP_TRUE_ANOMALY] to trueAnomaly.
+// http://en.wikipedia.org/wiki/Specific_orbital_energy
+set retval[OBTP_SP_OBT_ENERGY] to -1 * mu / (a * 2).
 // http://en.wikipedia.org/wiki/Orbital_period
 set retval[OBTP_PERIOD] to constant():PI * 2 * sqrt(abs(a)^3 / mu).
+set retval[OBTP_TRUE_ANOMALY] to trueAnomaly.
+set retval[OBTP_SP_ANG_MOMENTUM] to v(h:x, h:z, h:y). // swap Y/Z
 

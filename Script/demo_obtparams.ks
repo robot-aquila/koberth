@@ -21,11 +21,14 @@ print "              LAN:                         "+sps at (0,12).
 print "   Argument of PE:                         "+sps at (0,13).
 print "     True Anomaly:                         "+sps at (0,14).
 print "   Orbital period:                         "+sps at (0,15).
-print "-------------------------------------------"+sps at (0,16).
-print " Press AG9 to exit. If AG is not working   "+sps at (0,17).
-print " check the kOS window it must be unfocused."+sps at (0,18).
-print " AG is not working in the map mode.        "+sps at (0,19).
-print "-------------------------------------------"+sps at (0,20).
+print "           Origin:                         "+sps at (0,16).
+print "Sp.orbital energy:                         "+sps at (0,17).
+print "Sp. ang. momentum:                         "+sps at (0,18).
+print "-------------------------------------------"+sps at (0,19).
+print " Press AG9 to exit. If AG is not working   "+sps at (0,20).
+print " check the kOS window it must be unfocused."+sps at (0,21).
+print " AG is not working in the map mode.        "+sps at (0,22).
+print "-------------------------------------------"+sps at (0,23).
 
 // Don't use the locks cuz is possible to face inconsistent state at calculation
 //lock myPosition to ship:position - ship:body:position.
@@ -53,10 +56,10 @@ set prec to 4. // precision of the rounding
 until exit=1 {
     set myPosition to ship:position - ship:body:position.
     set myVelocity to velocity:orbit.
-    run lib_obtparams_from_pos_and_vel(myPosition, myVelocity, body:mu).
+    run lib_obtparams_from_pos_and_vel(myPosition, myVelocity, body).
     set myOrbit to retval.
 
-    set drawAngularMomentum:vec to v(h:x, h:z, h:y):normalized * edge.
+    set drawAngularMomentum:vec to myOrbit[OBTP_SP_ANG_MOMENTUM]:normalized * edge.
     set drawAngularMomentum:start to origin.
     set drawNodeVector:vec to v(nodeVec:x, nodeVec:z, nodeVec:y) * edge.
     set drawNodeVector:start to origin.
@@ -74,11 +77,11 @@ until exit=1 {
     print dummy at(col2, row).
     set row to row + 1.
 
-    print round(myOrbit[OBTP_PE] - body:radius, prec) + sps at (col1, row).
+    print round(myOrbit[OBTP_PE], prec) + sps at (col1, row).
     print round(kosOrbit:PERIAPSIS, prec) + sps at (col2, row).
     set row to row + 1.
 
-    print round(myOrbit[OBTP_AP] - body:radius, prec) + sps at (col1, row).
+    print round(myOrbit[OBTP_AP], prec) + sps at (col1, row).
     print round(kosOrbit:APOAPSIS, prec) + sps at (col2, row).
     set row to row + 1.
 
@@ -117,6 +120,18 @@ until exit=1 {
     print retval + sps at (col2, row).
     set row to row + 1.
 
+    print myOrbit[OBTP_ORIGIN]:NAME + sps at(col1, row).
+    print "---" at (col2, row).
+    set row to row + 1.
+
+    print round(myOrbit[OBTP_SP_OBT_ENERGY], prec) + sps at(col1, row).
+    print "---" at (col2, row).
+    set row to row + 1.
+
+    print round(myOrbit[OBTP_SP_ANG_MOMENTUM]:mag, prec) + sps at(col1, row).
+    print "---" at (col2, row).
+    set row to row + 1.
+    
     wait 1.
 }
 set drawAngularMomentum:show to false.

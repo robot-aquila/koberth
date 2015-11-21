@@ -1,0 +1,25 @@
+// Ведение аэроплана на координаты
+declare parameter lat,lng.
+
+sas off.
+rcs off.
+set maxd to 0.05.
+set tgt to latlng(lat,lng).
+set pv to 0.
+set dv to tgt:heading.
+run msg("turning to " + dv).
+lock steering to heading dv by pv.
+wait 1.
+// Такой подход не работает.
+until abs(latitude-tgt:lat)<maxd and abs(longitude-tgt:lng)<maxd {
+    if altitude<5000 and verticalspeed<1 and pv<20 {
+        set pv to pv+0.1.
+        run msg("DEBUG: increase pitch to " + pv).
+    }
+    if altitude>5000 and verticalspeed>1 and pv!=0 {
+        set pv to pv-0.1.
+        run msg("DEBUG: decrease pitch to " + pv).
+    }
+}
+run msg("target reached").
+

@@ -1,4 +1,0 @@
-declare parameter a.
-set a to 12345.
-
-

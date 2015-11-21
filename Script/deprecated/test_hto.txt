@@ -1,0 +1,85 @@
+declare parameter dest.
+
+set sps to "             ".
+print "--------------------------------------"+sps at (0,0).
+print " Hohmann transfer orbit demo.         "+sps at (0,1).
+print " Mission: Kerbin to "+(dest:name)+"   "+sps at (0,2).
+print "======================================"+sps at (0,3).
+print "     Initial R (km):                  "+sps at (0,4).
+print " Destination R (km):                  "+sps at (0,5).
+print "Angular algn.(grad):                  "+sps at (0,6).
+print "  Transfer time (s):                  "+sps at (0,7).
+print "    Burn 1 DV (m/s):                  "+sps at (0,8).
+print "    Burn 2 DV (m/s):                  "+sps at (0,9).
+print "     Total DV (m/s):                  "+sps at (0,10).
+print "  Init. AV (grad/s):                  "+sps at (0,11).
+print "  Dest. AV (grad/s):                  "+sps at (0,12).
+print "           Reserved:                  "+sps at (0,13).
+print " Phase angle (grad):                  "+sps at (0,14).
+print " Start point (grad):                  "+sps at (0,15).
+print "            ETA (s):                  "+sps at (0,16).
+print "      Angle formula:                  "+sps at (0,17).
+print "              DEBUG:                  "+sps at (0,18).
+print "--------------------------------------"+sps at (0,19).
+print "AG8 to make node. AG9 to exit.                    " at (0,20).
+print "If AG not working, try to toggle gears, lights or " at (0,21).
+print "brakes first. The kOS window must be unfocused.   " at (0,22).
+print "Seems AG not working in map mode.                 " at (0,23).
+print "--------------------------------------" at (0,24).
+set prpos to 21.
+
+lock destP to dest:position-body:position.
+lock destV to dest:velocity.
+lock initP to body:position*-1.
+lock initV to velocity:orbit.
+lock r1 to body:radius+(periapsis+apoapsis)/2.
+lock r2 to body:radius+dest:altitude.
+
+set pi to constant():pi.
+set pi2 to 2*pi.
+set rad2deg to 180/pi.
+set deg2rad to pi/180.
+
+if ag8="True" { toggle ag8. }
+if ag9="True" { toggle ag9. }
+set exit to 0.
+until exit=1 {
+    run getTransferParamsCO(r1,r2,body:mu).
+    run getPhaseAngleCO(initP,initV,destP,destV).
+
+    set startAngle to phaseAngle-tpA.
+    if r1>r2 and startAngle>0 { set startAngle to -pi2+startAngle. }
+    if r1<r2 and startAngle<0 { set startAngle to pi2+startAngle. }
+    
+    // method 0
+    //set t to startAngle/(pi2/obt:period-pi2/(pi2/tpAV2)).
+    
+    // method 2
+    set t to startAngle/(tpAV1-tpAV2).
+    
+    set x to round(r1/1000,3).              print x+sps at (prpos,4).
+    set x to round(r2/1000,3).              print x+sps at (prpos,5).
+    set x to round(tpA*rad2deg,8).          print x+sps at (prpos,6).
+    
+    run fmtTime(tpT).                       print fmtTime+sps at (prpos,7).
+    set x to round(tpDV1,2).                print x+sps at (prpos,8).
+    set x to round(tpDV2,2).                print x+sps at (prpos,9).
+    set x to round(tpDV1+tpDV2,2).          print x+sps at (prpos,10).
+    set x to round(tpAV1*rad2deg,8).        print x+sps at (prpos,11).
+    set x to round(tpAV2*rad2deg,8).        print x+sps at (prpos,12).
+    set x to round(phaseAngle*rad2deg,8).   print x+sps at (prpos,14).
+    set x to round(startAngle*rad2deg,8).   print x+sps at (prpos,15).
+    run fmtTime(t).                         print fmtTime+sps at (prpos,16).
+    print tpMethod at (prpos,17).
+    
+    if ag8="True" {
+        set x to node(phaseAngleTime+t, 0, 0, tpDV1).
+        add x.
+        toggle ag8.
+    }
+    if ag9="True" {
+        set exit to 1.
+        toggle ag9.
+    }
+}
+

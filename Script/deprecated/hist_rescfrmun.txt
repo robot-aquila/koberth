@@ -1,0 +1,47 @@
+// rescue from Mun
+set time_beg to time:seconds.
+lock time_str to "T+" + round(time:seconds - time_beg) + ": ".
+
+print time_str + "Start sequence".
+
+// ok params. arnd 40m/s kept
+//set alt to 12000.
+//set angle to r(0, -87, 0).
+
+set alt to 20000.
+set angle to r(0, -60, 0).
+
+sas off.
+rcs off.
+lock throttle to 0.2.
+lock steering to up + r(0, 0, 0).
+wait until alt:radar > 10.
+print time_str + "Orientation: " + facing.
+lock steering to up + angle.
+lock throttle to 1.
+gear off.
+print time_str + "Gravity turn".
+wait until apoapsis > alt.
+print time_str + "Orientation: " + facing.
+print time_str + "Apoapsis: " + alt.
+lock throttle to 0.
+
+set rb to body:radius.
+set vom to velocity:orbit:mag.
+set r to rb + altitude.
+set ra to rb + apoapsis.
+set va to sqrt(vom^2 + 2 * body:mu * (1/ra - 1/r)).
+set a to (periapsis + 2 * rb + apoapsis)/2.
+set r2 to rb + apoapsis.
+set a2 to (alt + 2*rb + apoapsis)/2.
+set v2 to sqrt(vom^2 + (body:mu * (2/r2 - 2/r + 1/a - 1/a2))).
+set deltav to v2 - va.
+print time_str + "Apoapsis burn: " + deltav.
+
+set x to node(time:seconds + eta:apoapsis, 0, 0, deltav).
+add x.
+
+print time_str + "ETA: " + eta:apoapsis.
+run node_exe.
+print time_str + "Sequence finished".
+

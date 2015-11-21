@@ -1,0 +1,59 @@
+// Перелет с площадки ККЦ куда нибудь рядом, но в пределах биома ККЦ.
+sas off.
+rcs off.
+set tv to 0.
+lock throttle to tv.
+lock steering to up + r(0,0,180).
+wait 1.
+run msg("Ignition").
+stage.
+
+run msg("Take off").
+set s_alt to alt:radar.
+until alt:radar >= s_alt + 15 {
+    run vspeed(5).
+    run mission0002_info.
+}
+
+run msg("Stabilizing").
+until verticalspeed <= 0.1 {
+    run vspeed(0).
+    run mission0002_info.
+}
+
+run msg("Turning (testing)").
+//set ship:control:pitch to 0.1.
+lock steering to up + r(0,0,180) + r(10,0,0).
+until surfacespeed > 5 {
+    run vspeed(0).
+    run mission0002_info.
+}
+
+run msg("Moving").
+lock steering to up + r(0,0,180).
+set s_time to missiontime.
+until missiontime - s_time >= 10 {
+    run vspeed(0).
+    run mission0002_info.
+}
+
+run msg("Stabilizing (in test)").
+//lock steering to velocity:surface * -1.
+lock steering to up + r(0,0,180) + r(-5,0,0).
+until surfacespeed <= 0.1 {
+    run vspeed(0).
+    run mission0002_info.
+}
+
+run msg("Descent").
+lock steering to up + r(0,0,180).
+lock steeping to up.
+until alt:radar > 2 {
+    run vspeed(-3).
+    run mission0002_info.
+}
+until status="LANDED" or status="SPLASHED" {
+    run vspeed(-1).
+    run mission0002_info.
+}
+

@@ -1,3 +1,0 @@
-// Launch to Kerbin shores near KSC
-run krb_launch_local(-7.6465, -83.3643,70).
-

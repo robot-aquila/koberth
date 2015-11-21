@@ -1,0 +1,21 @@
+print "Mission 0002                                  " at (0,0).
+set zz to round(velocity:surface:x, 4).
+print "X: " + zz + "                      " at (0,1).
+set zz to round(velocity:surface:y, 4).
+print "Y: " + zz + "                      " at (0,2).
+set zz to round(velocity:surface:z, 4).
+print "Z: " + zz + "                      " at (0,3).
+
+set zz to round(up:yaw - facing:yaw, 4).
+
+// кароче тут ясно, попробовать тут по разнице углов контролировать
+if zz > 180 { set zz to zz-360. } 
+if zz < -180 { set zz to zz-360. }
+print "  d-Yaw: " + zz + "                      " at (0,4).
+set zz to round(up:pitch - facing:pitch, 4).
+if abs(zz) > 180 { set zz to zz-360. }
+print "d-Pitch: " + zz + "                      " at (0,5).
+set zz to round(up:roll - facing:roll, 4).
+if abs(zz) > 180 { set zz to zz-360. }
+print " d-Roll: " + zz + "                      " at (0,6).
+

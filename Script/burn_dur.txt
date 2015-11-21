@@ -1,7 +1,0 @@
-// Calculate the burn duration for the specified delta-v.
-// Based on: http://forum.kerbalspaceprogram.com/threads/40053-Estimate-the-duration-of-a-burn
-// Returns the burn duration in variable called dur.
-declare parameter deltav.
-run cur_isp.
-set ve to isp * 9.81.
-set dur to (mass*ve/maxthrust)*(1-(2.71828^(0-deltav/ve))).

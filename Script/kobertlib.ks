@@ -48,7 +48,7 @@ function kob_warp_to {
 
 // Warp to relative time offset.
 // Param1: Time in seconds to warp to off the current time.
-function kob_warp_to_relative {
+function kob_warp_to_offset {
 	declare local parameter time_offset.
 	kob_warp_to(time:seconds + time_offset).
 }
@@ -60,24 +60,32 @@ function kob_warp_to_relative {
 function kob_execute_node {
 	local node is nextnode.
 	local burn_duration is kob_get_burn_duration(node:deltav:mag).
-	local node_p is r(0, 0, 0).
+	local node_p is v(0, 0, 0).
 	local throttle_set is 0.
 	local done is false.
 	local dv0 is node:deltav.
 	local max_accell is 0.
+	local burn_time_offset is 0.
+	local dummy is 0.
 	lock max_accell to maxthrust / mass.
+	lock burn_time_offset to node:eta - burn_duration / 2.
+	
+	print "DEBUG: Node in " + node:eta + " seconds".
+	print "DEBUG: Burn duration is " + burn_duration + " seconds".
 	
 	// TODO: Use the calculated time offset based on ship's turnaround time.
-	kob_warp_to_relative(node:eta + burn_duration / 2 - 45).
+	set dummy to burn_time_offset - 45.
+	print "DEBUG: Warp for " + dummy + " seconds".
+	kob_warp_to_offset(dummy).
+	wait dummy.
 	sas off.
-	rcs on. // TODO: Use global settings for this action.
 	lock node_p to lookdirup(node:deltav, ship:facing:topvector).
+	print "DEBUG: Start steering".
 	lock steering to node_p.
-	// TODO: Add check of time duration.
-	wait until abs(node_p:pitch - facing:pitch) < 0.1 and abs(node_p:yaw - facing:yaw) < 0.1.
-	rcs off. // TODO: Use global settings for this action.
-	
-	wait until node:eta <= burn_duration / 2.
+	wait until abs(node_p:pitch - facing:pitch) < 0.15 and abs(node_p:yaw - facing:yaw) < 0.15.
+	print "DEBUG: Steereng finisged, Wait " + burn_time_offset + " seconds to start burn...".
+	wait burn_time_offset.
+	print "DEBUG: Start burning".
 	
 	lock throttle to throttle_set.
 	until done {
@@ -94,5 +102,6 @@ function kob_execute_node {
 	}
 	unlock steering.
 	unlock throttle.
+	print "DEBUG: Maneuver finished".
 }
 

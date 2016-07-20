@@ -1,5 +1,4 @@
 @lazyglobal off.
 
-run kobertlib.
-//kob_execute_node().
-kob_launch_to_kerbin_orbit(80).
+run once kobertlib.
+kob_demo_obt_params_of_current_vessel().

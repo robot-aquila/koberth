@@ -28,6 +28,18 @@ declare global KOB_OBT_TRUE_ANOMALY     is 12.  // True anomaly (degrees)
 declare global KOB_OBT_SP_ANG_MOMENTUM  is 13.  // Specific angular momentum (vector)
 declare global KOB_OBT_STRUCTURE_SIZE   is 14.
 
+
+// Hohmann transfer orbit constants.
+declare global KOB_HTO_TRANSFER_TIME	is 0.	// Transfer time (seconds).
+declare global KOB_HTO_ANGULAR_ALIGN	is 1.	// Angular alignment (radians)
+declare global KOB_HTO_BURN1_DV			is 2.	// Delta-V for initial burn.
+declare global KOB_HTO_BURN2_DV			is 3.	// Delta-V for final burn.
+declare global KOB_HTO_ANGULAR_VEL_SRC	is 4.	// Angular velocity on initial
+												// orbit (radians per second).
+declare global KOB_HTO_ANGULAR_VEL_DST	is 5.	// Angular velocity on target
+												// orbit (radians per second).
+
+
 // -----------------------------------------------------------------------------
 // Create an empty orbit params structure.
 // Return: initialized orbit structure
@@ -172,6 +184,72 @@ function kob_get_burn_duration {
 	local isp is kob_get_isp().
 	local ve is isp * 9.81. // TODO: replace to kerbin g
 	return (mass * ve / maxthrust) * (1 - (2.71828 ^ (0 - delta_v / ve))).
+}
+
+// -----------------------------------------------------------------------------
+// Calculate the Hohmann Transfer Orbit parameters.
+// Based on: http://en.wikipedia.org/wiki/Hohmann_transfer_orbit
+// http://forum.kerbalspaceprogram.com/threads/16511-Tutorial-Interplanetary-How-To-Guide
+// https://docs.google.com/document/d/1IX6ykVb0xifBrB4BRFDpqPO6kjYiLvOcEo3zwmZL0sQ/edit
+// Param1: Radius of an initial orbit (from center of origin body)
+// Param2: Radius of a target orbit (same as r1)
+// Param3: Gravitational parameter of origin body (Mu)
+// Return: List of maneuver parameters.
+// See KOB_HTO_* constants to decode and access the result.
+function kob_get_hto_params_co {
+	declare local parameter r1,r2,gravParam.
+	local pi is constant():pi.
+	local pi2 is 2*pi.
+	local tpAV1 is sqrt(gravParam/r1^3).
+	local tpAV2 is sqrt(gravParam/r2^3).
+	local tpT is pi*sqrt((r1+r2)^3/(8*gravParam)).
+	
+	// method 0
+	// http://en.wikipedia.org/wiki/Hohmann_transfer_orbit
+	local tpA is pi-tpAV2*tpT.
+	
+	// method 1
+	// http://forum.kerbalspaceprogram.com/threads/16511-Tutorial-Interplanetary-How-To-Guide
+	//local tpA is pi-sqrt(gravParam/r2)*tpT/r2.
+	
+	// method 2
+	// https://docs.google.com/document/d/1IX6ykVb0xifBrB4BRFDpqPO6kjYiLvOcEo3zwmZL0sQ/edit
+	//local tpA is pi-pi2*(0.5*(((r1+r2)/(2*r2))^1.5)).
+	
+	local tpDV1 is sqrt(gravParam/r1)*(sqrt(2*r2/(r1+r2))-1).
+	local tpDV2 is sqrt(gravParam/r2)*(1-sqrt(2*r1/(r1+r2))).
+
+	local retval is list().
+	retval:add(tpT). // KOB_HTO_TRANSFER_TIME
+	retval:add(tpA). // KOB_HTO_ANGULAR_ALIGN
+	retval:add(tpDV1). // KOB_HTO_BURN1_DV
+	retval:add(tpDV2). // KOB_HTO_BURN2_DV
+	retval:add(tpAV1). // KOB_HTO_ANGULAR_VEL_SRC
+	retval:add(tpAV2). // KOB_HTO_ANGULAR_VEL_DST
+	return retval.
+}
+
+// -----------------------------------------------------------------------------
+// Calculate a phase angle between two objects on different circular orbits.
+// Param1: Object position vector of a source orbit (i.g. body:position*-1)
+// Param2: Object velocity vector of a source orbit (i.g. velocity:orbit)
+// Param3: Object position vector of a target orbit (i.g. target:position-body:position)
+// Param4: Object velocity vector of a target orbit (i.g. target:velocity)
+// Return: phase angle in radians [0,2pi) when source on lower or (-2pi,0] when source on higher orbit
+function kob_get_hto_phase_angle_co {
+	declare local parameter srcPos,srcVel,dstPos,dstVel.
+	local pi is constant():pi.
+	local deg2rad is pi/180.
+	
+	// method 0
+	local phaseAngle is vang(srcPos,dstPos)*deg2rad.
+	
+	// method 1
+	//local phaseAngle is arccos(vdot(srcPos,dstPos)/(srcPos:mag*dstPos:mag))*deg2rad.
+	
+	if vdot(srcVel,srcPos-dstPos)>0 { set phaseAngle to 2*pi-phaseAngle. }
+	if srcPos:mag>dstPos:mag { set phaseAngle to -2*pi+phaseAngle. }
+	return phaseAngle.
 }
 
 // -----------------------------------------------------------------------------

@@ -196,7 +196,7 @@ function kob_get_burn_duration {
 // Param3: Gravitational parameter of origin body (Mu)
 // Return: List of maneuver parameters.
 // See KOB_HTO_* constants to decode and access the result.
-function kob_get_hto_params_co {
+function kob_hto_co_get_params {
 	declare local parameter r1,r2,gravParam.
 	local pi is constant():pi.
 	local pi2 is 2*pi.
@@ -236,7 +236,7 @@ function kob_get_hto_params_co {
 // Param3: Object position vector of a target orbit (i.g. target:position-body:position)
 // Param4: Object velocity vector of a target orbit (i.g. target:velocity)
 // Return: phase angle in radians [0,2pi) when source on lower or (-2pi,0] when source on higher orbit
-function kob_get_hto_phase_angle_co {
+function kob_hto_co_get_phase_angle {
 	declare local parameter srcPos,srcVel,dstPos,dstVel.
 	local pi is constant():pi.
 	local deg2rad is pi/180.
@@ -250,6 +250,48 @@ function kob_get_hto_phase_angle_co {
 	if vdot(srcVel,srcPos-dstPos)>0 { set phaseAngle to 2*pi-phaseAngle. }
 	if srcPos:mag>dstPos:mag { set phaseAngle to -2*pi+phaseAngle. }
 	return phaseAngle.
+}
+
+// -----------------------------------------------------------------------------
+// Calculate default orbit radius for relay sattelyte.
+// Param1: Target body
+// Return: Radius from center of body (meters).
+function kob_sat_obt_get_default_radius {
+	declare local parameter tgt.
+	if tgt:typename() <> "Body" {
+		kob_print_error("Target type must be Body but " + tgt:typename()).
+		return 1 / 0.
+	}
+	local a is tgt:radius.
+	print "a for " + tgt + " is " + a.
+	if tgt:atm:exists {
+		set a to a + tgt:atm:height.
+	}
+	set a to a * 1.1. // +10%
+	print "a for " + tgt + " is " + a.
+	// c = a / sin(A)
+	return a / sin(30).
+}
+
+// -----------------------------------------------------------------------------
+// Calculate default altitude for relay satellite.
+// Param1: Target body
+// Return: Altitude above ASL (meters).
+function kob_sat_obt_get_default_alt {
+	declare local parameter tgt.
+	local r is kob_sat_obt_get_default_radius(tgt).
+	return r - tgt:radius.
+}
+
+// -----------------------------------------------------------------------------
+// Print error message.
+// Param1: Message to print.
+function kob_print_error {
+	declare local parameter msg.
+	print "> KOB-ERR".
+	print "> KOB-ERR " + msg.
+	print "> KOB-ERR Prepare to terminate!".
+	print "> KOB-ERR".
 }
 
 // -----------------------------------------------------------------------------

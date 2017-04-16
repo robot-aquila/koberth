@@ -3,7 +3,7 @@
 run once kobertlib.
 local r1 is body:radius+(periapsis+apoapsis)/2.
 local r2 is body:radius+target:altitude.
-local htoParams is kob_get_hto_params_co(r1, r2, body:mu).
+local htoParams is kob_hto_co_get_params(r1, r2, body:mu).
 print "TRANSFER TIME: " + htoParams[KOB_HTO_TRANSFER_TIME].
 print "ANGULAR ALIGN: " + htoParams[KOB_HTO_ANGULAR_ALIGN].
 print "BURN1 Delta-V: " + htoParams[KOB_HTO_BURN1_DV].
@@ -11,7 +11,7 @@ print "BURN2 Delta-V: " + htoParams[KOB_HTO_BURN2_DV].
 print "ANG.VEL.SRC. : " + htoParams[KOB_HTO_ANGULAR_VEL_SRC].
 print "ANG.VEL.DST. : " + htoParams[KOB_HTO_ANGULAR_VEL_DST].
 
-local phaseAngle is kob_get_hto_phase_angle_co(body:position*-1, velocity:orbit, target:position-body:position, target:velocity).
+local phaseAngle is kob_hto_co_get_phase_angle(body:position*-1, velocity:orbit, target:position-body:position, target:velocity).
 local phaseAngleT is time:seconds.
 // We want to be on same orbit but 120 grad behind the target.
 // Then we have to point to that point.

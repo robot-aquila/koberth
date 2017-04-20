@@ -72,23 +72,6 @@ function kob_obt_empty {
 //      http://ksp-kos.github.io/KOS_DOC/math/ref_frame.html
 //
 // To avoid any difficulties just swap Y and Z component before calculations
-// 
-// Known issues: 
-// - LAN angle is mismatched with the KOS-given value. 
-//   Looking to vectors, value calculated by the library is correct.
-//   lan_ingame_offset:
-//                  LIB     KOS     DIF
-//   Kerbin:
-//      Y1D106      247     308     299
-//      Y1D106       86     147     299
-//      Y1D106      320      21     299
-//      Y1D106      192     308     244
-//      Y1D107       53     177     236     hyperbolic
-//   Mun:
-//      Y1D107      124     248     236     hyperbolic
-//      Y1D107      124     248     236
-//   Kerbol:
-//      Y1D106      335      85     250
 //
 function kob_obt_from_pos_and_vel {
 	declare local parameter posVec.
@@ -105,7 +88,6 @@ function kob_obt_from_pos_and_vel {
 	local i is arccos(h:z / h:mag). // Inclination, Eq. 5.26
 	local nodeVec is v(-1 * h:y, h:x, 0):normalized. // Ascending node, Eq. 5.22
 
-
 	local hyperbolic is false.
 	// Eccentricity vector, Eq. 5.23
 	local a is 1 / (2 / r - v * v / mu). // Semi-major axis, Eq. 5.24
@@ -121,9 +103,9 @@ function kob_obt_from_pos_and_vel {
 	
 	// Note: the nodeVec is unit vector. Dividing by magnitude isn't needed.
 
-
 	// Longitude of ascending node, Eq. 5.27
-	local lan is arccos(nodeVec:x).
+	local lan is arccos(nodeVec:x) + arccos(solarprimevector:x).
+	
 	if nodeVec:y < 0 { set lan to 360 - lan. }
 	local aop is arccos(vdot(nodeVec, eVec) / e). // Argument of periapsis, Eq. 5.28
 	if eVec:z < 0 { set aop to 360 - aop. }
@@ -576,12 +558,12 @@ function kob_demo_obt_params_of_current_vessel {
 	//set origin to v(0,0,0).
 	local lock edge to kosOrbit:apoapsis + body:radius.
 	local drawAngularMomentum is VecDrawArgs(origin, v(1,0,0), rgb(1,0,0), "Angular Momentum", 1, true).
-	local drawNodeVector is VecDrawArgs(origin, v(1,0,0), rgb(0,1,0), "Ascending node", 1, true).
-	local drawEccVector is VecDrawArgs(origin, v(1,0,0), rgb(0,0,1), "Eccentricity vector", 1, true).
+	//local drawNodeVector is VecDrawArgs(origin, v(1,0,0), rgb(0,1,0), "Ascending node", 1, true).
+	//local drawEccVector is VecDrawArgs(origin, v(1,0,0), rgb(0,0,1), "Eccentricity vector", 1, true).
 	
-	local xAxis is VECDRAWARGS(origin , V(edge,0,0), RGB(1.0,0.5,0.5), "X axis", 1, TRUE ).
-	local yAxis is VECDRAWARGS(origin, V(0,edge,0), RGB(0.5,1.0,0.5), "Y axis", 1, TRUE ).
-	local zAxis is VECDRAWARGS(origin, V(0,0,edge), RGB(0.5,0.5,1.0), "Z axis", 1, TRUE ).
+	//local xAxis is VECDRAWARGS(origin , V(edge,0,0), RGB(1.0,0.5,0.5), "X axis", 1, TRUE ).
+	//local yAxis is VECDRAWARGS(origin, V(0,edge,0), RGB(0.5,1.0,0.5), "Y axis", 1, TRUE ).
+	//local zAxis is VECDRAWARGS(origin, V(0,0,edge), RGB(0.5,0.5,1.0), "Z axis", 1, TRUE ).
 	
 		
 	local prec is 4. // precision of the rounding
@@ -603,9 +585,9 @@ function kob_demo_obt_params_of_current_vessel {
 	    // WARN: eVec was in old version (Eccentricity)
 	    //set drawEccVector:vec to v(eVec:x, eVec:z, eVec:y):normalized * (kosOrbit:periapsis + body:radius).
 	    //set drawEccVector:start to origin.
-	    set xAxis:start to origin.
-	    set yAxis:start to origin.
-	    set zAxis:start to origin.
+	    //set xAxis:start to origin.
+	    //set yAxis:start to origin.
+	    //set zAxis:start to origin.
 	    
 	    local row is 5.
 		local dummy is "".

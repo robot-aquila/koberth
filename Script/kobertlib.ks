@@ -6,30 +6,30 @@
 
 @lazyglobal off.
 
-// Initialize a field constants to easy access to the orbit structure fields.
-// ALWAYS use those constants to get access to the elements of the orbit.
-// It will make your program stable and independent of the possible
-// future changes of the structure.
-declare global KOB_OBT_ORIGIN			is 0.
-declare global KOB_OBT_AP         		is 1.
-declare global KOB_OBT_PE             	is 2.
-declare global KOB_OBT_IS_HYPERBOLIC  	is 3.  // Boolean true/false.
-declare global KOB_OBT_PERIOD         	is 4.
-declare global KOB_OBT_INCL           	is 5.
-declare global KOB_OBT_ECC            	is 6.
-declare global KOB_OBT_SEMIMAJOR_AXIS 	is 7.
-declare global KOB_OBT_SEMIMINOR_AXIS 	is 8.
-declare global KOB_OBT_ARG_OF_PE      	is 9.
-declare global KOB_OBT_LAN            	is 10.
-declare global KOB_OBT_SP_OBT_ENERGY  	is 11.  // Specific orbital energy
-// Please note: The following parameters may be undefined (zeroed)
-// if the just orbit is given without a body on it.
+// KOB_OBT_* - Basic orbital parameters.
+declare global KOB_OBT_ORIGIN			is 0.   // An orbit central body
+declare global KOB_OBT_AP         		is 1.   // Apoapsis (meters above surface)
+declare global KOB_OBT_PE               is 2.   // Periapsis (meters above surface)
+declare global KOB_OBT_HYPERBOLIC       is 3.   // True if orbit is hyperbolic
+declare global KOB_OBT_PERIOD           is 4.   // Orbital period (seconds)
+declare global KOB_OBT_INCL             is 5.   // Orbit inclination (grad)
+declare global KOB_OBT_ECC              is 6.   // Orbit eccentricity
+declare global KOB_OBT_SEMIMAJOR_AXIS   is 7.
+declare global KOB_OBT_SEMIMINOR_AXIS   is 8.
+declare global KOB_OBT_APE              is 9.   // Argument of periapsis
+                                                // (grad, relative to LAN)
+declare global KOB_OBT_LAN              is 10.  // Longitude of ascending node
+                                                // (grad, relative to solar
+                                                // prime vector)
+declare global KOB_OBT_ENERGY           is 11.  // Specific orbital energy
+// TODO: move to another place
 declare global KOB_OBT_TRUE_ANOMALY     is 12.  // True anomaly (degrees)
+// TODO: move to another place
 declare global KOB_OBT_SP_ANG_MOMENTUM  is 13.  // Specific angular momentum (vector)
 declare global KOB_OBT_STRUCTURE_SIZE   is 14.
 
 
-// Hohmann transfer orbit constants.
+// KOB_HTO_* - Hohmann transfer orbit parameters.
 declare global KOB_HTO_TRANSFER_TIME	is 0.	// Transfer time (seconds).
 declare global KOB_HTO_ANGULAR_ALIGN	is 1.	// Angular alignment (radians)
 declare global KOB_HTO_BURN1_DV			is 2.	// Delta-V for initial burn.
@@ -51,6 +51,29 @@ function kob_obt_empty {
     	set dummy to dummy + 1.
 	}
 	return retval.
+}
+
+// -----------------------------------------------------------------------------
+// Get eccentricity vector of an object on orbit. Eccentricity vector points
+// from focus of the orbit to periapsis. It has length equals to orbit
+// eccentricity.
+// Param1 - position vector
+// Param2 - velocity vector
+// Param3 - the body of origin
+// Return: eccentricity vector
+//
+// Based on: http://www.braeunig.us/space/interpl.htm
+// Eccentricity vector, Eq. 5.23
+//
+function kob_body_eccentricityv_from_pv {
+    declare local parameter posVec.
+    declare local parameter velVec.
+    declare local parameter originBody.
+    local mu is originBody:mu.
+    local r is posVec:mag. // Radius
+    local v is velVec:mag. // Scalar velocity
+    local eVec is (1 / mu) * (((v * v - mu / r) * posVec) - vdot(posVec, velVec) * velVec).
+    return eVec.
 }
 
 // -----------------------------------------------------------------------------
@@ -87,10 +110,11 @@ function kob_obt_from_pos_and_vel {
 	local h is vcrs(posVec, velVec). // Specific angular momentum, Eq. 5.21
 	local i is arccos(h:z / h:mag). // Inclination, Eq. 5.26
 	local nodeVec is v(-1 * h:y, h:x, 0):normalized. // Ascending node, Eq. 5.22
-
 	local hyperbolic is false.
-	// Eccentricity vector, Eq. 5.23
-	local a is 1 / (2 / r - v * v / mu). // Semi-major axis, Eq. 5.24
+	// Semi-major axis, Eq. 5.24
+	local a is 1 / (2 / r - v * v / mu).
+	
+    // Eccentricity vector, Eq. 5.23
 	local eVec is (1 / mu) * (((v * v - mu / r) * posVec) - vdot(posVec, velVec) * velVec).
 	local e is eVec:mag. // Eccentricity, Eq. 5.25
 	local b is 0.
@@ -115,17 +139,17 @@ function kob_obt_from_pos_and_vel {
 
 	local retval is kob_obt_empty.
 	set retval[KOB_OBT_ORIGIN] to originBody.
-	set retval[KOB_OBT_IS_HYPERBOLIC] to hyperbolic.
+	set retval[KOB_OBT_HYPERBOLIC] to hyperbolic.
 	set retval[KOB_OBT_INCL] to i.
 	set retval[KOB_OBT_ECC] to e.
 	set retval[KOB_OBT_SEMIMAJOR_AXIS] to a.
 	set retval[KOB_OBT_SEMIMINOR_AXIS] to b.
 	set retval[KOB_OBT_PE] to a * (1 - e) - originBody:radius.
 	set retval[KOB_OBT_AP] to a * (1 + e) - originBody:radius.
-	set retval[KOB_OBT_ARG_OF_PE] to aop.
+	set retval[KOB_OBT_APE] to aop.
 	set retval[KOB_OBT_LAN] to lan.
 	// http://en.wikipedia.org/wiki/Specific_orbital_energy
-	set retval[KOB_OBT_SP_OBT_ENERGY] to -1 * mu / (a * 2).
+	set retval[KOB_OBT_ENERGY] to -1 * mu / (a * 2).
 	// http://en.wikipedia.org/wiki/Orbital_period
 	set retval[KOB_OBT_PERIOD] to constant():PI * 2 * sqrt(abs(a)^3 / mu).
 	set retval[KOB_OBT_TRUE_ANOMALY] to trueAnomaly.
@@ -559,7 +583,7 @@ function kob_demo_obt_params_of_current_vessel {
 	local lock edge to kosOrbit:apoapsis + body:radius.
 	local drawAngularMomentum is VecDrawArgs(origin, v(1,0,0), rgb(1,0,0), "Angular Momentum", 1, true).
 	//local drawNodeVector is VecDrawArgs(origin, v(1,0,0), rgb(0,1,0), "Ascending node", 1, true).
-	//local drawEccVector is VecDrawArgs(origin, v(1,0,0), rgb(0,0,1), "Eccentricity vector", 1, true).
+	local drawEccVector is VecDrawArgs(origin, v(1,0,0), rgb(0,0,1), "Eccentricity vector", 1, true).
 	
 	//local xAxis is VECDRAWARGS(origin , V(edge,0,0), RGB(1.0,0.5,0.5), "X axis", 1, TRUE ).
 	//local yAxis is VECDRAWARGS(origin, V(0,edge,0), RGB(0.5,1.0,0.5), "Y axis", 1, TRUE ).
@@ -582,9 +606,15 @@ function kob_demo_obt_params_of_current_vessel {
 	    // WARN: nodeVec was in old version (Ascending Node)
 	    //set drawNodeVector:vec to v(nodeVec:x, nodeVec:z, nodeVec:y) * edge.
 	    //set drawNodeVector:start to origin.
+	    
+	    local eVec to kob_body_eccentricityv_from_pv(myPosition, myVelocity, body).
+	    //set drawEccVector:vec to eVec.
+	    //set drawEccVector:start to origin.
 	    // WARN: eVec was in old version (Eccentricity)
 	    //set drawEccVector:vec to v(eVec:x, eVec:z, eVec:y):normalized * (kosOrbit:periapsis + body:radius).
-	    //set drawEccVector:start to origin.
+	    set drawEccVector:vec to eVec:normalized * (kosOrbit:periapsis + body:radius).
+	    set drawEccVector:start to origin.
+	    
 	    //set xAxis:start to origin.
 	    //set yAxis:start to origin.
 	    //set zAxis:start to origin.
@@ -593,7 +623,7 @@ function kob_demo_obt_params_of_current_vessel {
 		local dummy is "".
 		local err is 0.
 			
-	    set dummy to "N". if myOrbit[KOB_OBT_IS_HYPERBOLIC] { set dummy to "Y". }
+	    set dummy to "N". if myOrbit[KOB_OBT_HYPERBOLIC] { set dummy to "Y". }
 	    print dummy at(col1, row).
 	    set dummy to "N". if kosOrbit:ECCENTRICITY >= 1 { set dummy to "Y". }
 	    print dummy at(col2, row).
@@ -643,7 +673,7 @@ function kob_demo_obt_params_of_current_vessel {
 	    print round(kosOrbit:LAN, prec) + sps at (col2, row).
 	    set row to row + 1.
 	
-	    print round(myOrbit[KOB_OBT_ARG_OF_PE], prec) + sps at (col1, row).
+	    print round(myOrbit[KOB_OBT_APE], prec) + sps at (col1, row).
 	    print round(kosOrbit:ARGUMENTOFPERIAPSIS, prec) + sps at (col2, row).
 	    set row to row + 1.
 	
@@ -659,7 +689,7 @@ function kob_demo_obt_params_of_current_vessel {
 	    print "---" at (col2, row).
 	    set row to row + 1.
 	
-	    print round(myOrbit[KOB_OBT_SP_OBT_ENERGY], prec) + sps at(col1, row).
+	    print round(myOrbit[KOB_OBT_ENERGY], prec) + sps at(col1, row).
 	    print "---" at (col2, row).
 	    set row to row + 1.
 	
@@ -670,9 +700,9 @@ function kob_demo_obt_params_of_current_vessel {
 	    wait 1.
 	}
 	set drawAngularMomentum:show to false.
-	set drawNodeVector:show to false.
+	//set drawNodeVector:show to false.
 	set drawEccVector:show to false.
-	set xAxis:show to false.
-	set yAxis:show to false.
-	set zAxis:show to false.
+	//set xAxis:show to false.
+	//set yAxis:show to false.
+	//set zAxis:show to false.
 }

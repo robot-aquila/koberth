@@ -6,27 +6,21 @@
 
 @lazyglobal off.
 
-// KOB_OBT_* - Basic orbital parameters.
+// KOB_OBT_* - Basic orbit parameters
 declare global KOB_OBT_ORIGIN			is 0.   // An orbit central body
 declare global KOB_OBT_AP         		is 1.   // Apoapsis (meters above surface)
 declare global KOB_OBT_PE               is 2.   // Periapsis (meters above surface)
-declare global KOB_OBT_HYPERBOLIC       is 3.   // True if orbit is hyperbolic
-declare global KOB_OBT_PERIOD           is 4.   // Orbital period (seconds)
-declare global KOB_OBT_INCL             is 5.   // Orbit inclination (grad)
-declare global KOB_OBT_ECC              is 6.   // Orbit eccentricity
-declare global KOB_OBT_SEMIMAJOR_AXIS   is 7.
-declare global KOB_OBT_SEMIMINOR_AXIS   is 8.
-declare global KOB_OBT_APE              is 9.   // Argument of periapsis
+declare global KOB_OBT_PERIOD           is 3.   // Orbital period (seconds)
+declare global KOB_OBT_INC              is 4.   // Orbit inclination (grad)
+declare global KOB_OBT_ECC              is 5.   // Orbit eccentricity
+declare global KOB_OBT_SMAJA            is 6.	// Semi-major axis
+declare global KOB_OBT_SMINA            is 7.   // Semi-minor axis
+declare global KOB_OBT_APE              is 8.   // Argument of periapsis
                                                 // (grad, relative to LAN)
-declare global KOB_OBT_LAN              is 10.  // Longitude of ascending node
+declare global KOB_OBT_LAN              is 9.   // Longitude of ascending node
                                                 // (grad, relative to solar
                                                 // prime vector)
-declare global KOB_OBT_ENERGY           is 11.  // Specific orbital energy
-// TODO: move to another place
-declare global KOB_OBT_TRUE_ANOMALY     is 12.  // True anomaly (degrees)
-// TODO: move to another place
-declare global KOB_OBT_SP_ANG_MOMENTUM  is 13.  // Specific angular momentum (vector)
-declare global KOB_OBT_STRUCTURE_SIZE   is 14.
+declare global KOB_OBT_STRUCTURE_SIZE   is 10.
 
 
 // KOB_HTO_* - Hohmann transfer orbit parameters.
@@ -44,28 +38,53 @@ declare global KOB_HTO_ANGULAR_VEL_DST	is 5.	// Angular velocity on target
 // Create an empty orbit params structure.
 // Return: initialized orbit structure
 function kob_obt_empty {
-	local retval is list().
-	local dummy is 0.
-	until dummy >= KOB_OBT_STRUCTURE_SIZE {
-    	retval:add(0).
-    	set dummy to dummy + 1.
+    local retval is list().
+    local dummy is 0.
+    until dummy >= KOB_OBT_STRUCTURE_SIZE {
+        retval:add(0).
+        set dummy to dummy + 1.
+    }
+    return retval.
+}
+
+// -----------------------------------------------------------------------------
+// Initialize an orbit structure using orbitable object instance.
+// Param1: instance of an orbitable object (celestial body or vessel)
+// Return: initialized orbit structure
+function kob_obt_initBy_kos_body {
+	declare local parameter tgt.
+	if not tgt:istype("Orbitable") {
+		kob_print_error("Unexpected type: " + tgt:typename()).
+		return 1 / 0.
 	}
-	return retval.
+	local kosObt is tgt:orbit.
+	local res is kob_obt_empty().
+	set res[KOB_OBT_ORIGIN] to kosObt:BODY.
+	set res[KOB_OBT_AP] to kosObt:APOAPSIS.
+	set res[KOB_OBT_PE] to kosObt:PERIAPSIS.
+	set res[KOB_OBT_PERIOD] to kosObt:PERIOD.
+	set res[KOB_OBT_INC] to kosObt:INCLINATION.
+	set res[KOB_OBT_ECC] to kosObt:ECCENTRICITY.
+	set res[KOB_OBT_SMAJA] to kosObt:SEMIMAJORAXIS.
+	set res[KOB_OBT_SMINA] to kosObt:SEMIMINORAXIS.
+	set res[KOB_OBT_APE] to kosObt:ARGUMENTOFPERIAPSIS.
+	set res[KOB_OBT_LAN] to kosObt:LAN.
+	return res.
 }
 
 // -----------------------------------------------------------------------------
 // Get eccentricity vector of an object on orbit. Eccentricity vector points
 // from focus of the orbit to periapsis. It has length equals to orbit
 // eccentricity.
-// Param1 - position vector
-// Param2 - velocity vector
-// Param3 - the body of origin
+// Param1: position vector
+// Param2: velocity vector
+// Param3: the body of origin
 // Return: eccentricity vector
 //
 // Based on: http://www.braeunig.us/space/interpl.htm
 // Eccentricity vector, Eq. 5.23
 //
-function kob_body_eccentricityv_from_pv {
+function kob_obt_get_eccVec_pv {
     declare local parameter posVec.
     declare local parameter velVec.
     declare local parameter originBody.
@@ -75,6 +94,32 @@ function kob_body_eccentricityv_from_pv {
     local eVec is (1 / mu) * (((v * v - mu / r) * posVec) - vdot(posVec, velVec) * velVec).
     return eVec.
 }
+
+// -----------------------------------------------------------------------------
+// Get specific angular momentum vector from position and velocity vectors
+// (Eq. 5.21)
+// Param1: position vector
+// Param2: velocity vector
+// Return: vector of specific angular momentum
+function kob_obt_get_samVec_pv {
+	declare local parameter posVec.
+	declare local parameter velVec.
+	return vcrs(posVec, velVec).	
+}
+
+// -----------------------------------------------------------------------------
+// Get vector of ascending/descending nodes from position and velocity vectors
+// (Eq. 5.22)
+// Param1: position vector
+// Param2: velocity vector
+// Return: vector of ascending/descending nodes
+function kob_obt_get_nodeVec_pv {
+	declare local parameter posVec.
+	declare local parameter velVec.
+	local samVec is kob_obt_get_samVec_pv(posVec, velVec).
+	return vcrs(v(0, 1, 0), samVec):normalized.
+}
+
 
 // -----------------------------------------------------------------------------
 // Fill the orbit params structure from position and velocity vectors.
@@ -96,6 +141,7 @@ function kob_body_eccentricityv_from_pv {
 //
 // To avoid any difficulties just swap Y and Z component before calculations
 //
+// TODO: Deprecated, to remove, rename or refactor
 function kob_obt_from_pos_and_vel {
 	declare local parameter posVec.
 	declare local parameter velVec.
@@ -139,21 +185,22 @@ function kob_obt_from_pos_and_vel {
 
 	local retval is kob_obt_empty.
 	set retval[KOB_OBT_ORIGIN] to originBody.
-	set retval[KOB_OBT_HYPERBOLIC] to hyperbolic.
-	set retval[KOB_OBT_INCL] to i.
+	set retval[KOB_OBT_INC] to i.
 	set retval[KOB_OBT_ECC] to e.
-	set retval[KOB_OBT_SEMIMAJOR_AXIS] to a.
-	set retval[KOB_OBT_SEMIMINOR_AXIS] to b.
+	set retval[KOB_OBT_SMAJA] to a.
+	set retval[KOB_OBT_SMINA] to b.
 	set retval[KOB_OBT_PE] to a * (1 - e) - originBody:radius.
 	set retval[KOB_OBT_AP] to a * (1 + e) - originBody:radius.
 	set retval[KOB_OBT_APE] to aop.
 	set retval[KOB_OBT_LAN] to lan.
-	// http://en.wikipedia.org/wiki/Specific_orbital_energy
-	set retval[KOB_OBT_ENERGY] to -1 * mu / (a * 2).
-	// http://en.wikipedia.org/wiki/Orbital_period
 	set retval[KOB_OBT_PERIOD] to constant():PI * 2 * sqrt(abs(a)^3 / mu).
-	set retval[KOB_OBT_TRUE_ANOMALY] to trueAnomaly.
-	set retval[KOB_OBT_SP_ANG_MOMENTUM] to v(h:x, h:z, h:y). // swap Y/Z
+
+	// TODO: move to other place
+	// http://en.wikipedia.org/wiki/Specific_orbital_energy
+	//set retval[KOB_OBT_ENERGY] to -1 * mu / (a * 2).
+	// http://en.wikipedia.org/wiki/Orbital_period
+	//set retval[KOB_OBT_TRUE_ANOMALY] to trueAnomaly.
+	//set retval[KOB_OBT_SP_ANG_MOMENTUM] to v(h:x, h:z, h:y). // swap Y/Z
 	return retval.
 }
 
@@ -488,7 +535,7 @@ function kob_launch_to_kerbin_orbit {
     		lights on.
     		unlock steering.
     		//set mode to 0.
-    		print "WELCOME TO A STABE SPACE ORBIT!".
+    		print "WELCOME TO A STABLE SPACE ORBIT!".
     		wait 2.
 		}
 
@@ -527,6 +574,28 @@ function kob_launch_to_kerbin_orbit {
 }
 
 // -----------------------------------------------------------------------------
+// Print orbit info starting at specified position.
+// Param1: starting column
+// Param2: starting row
+// Param3: orbit structure (KOB format)
+function kob_obt_print_at {
+	declare local parameter col, row, kobt.
+	local prec is 4.
+	local sps is "             ".
+
+	print round(kobt[KOB_OBT_PE], prec)			+ sps at (col, row).
+	print round(kobt[KOB_OBT_PE], prec)			+ sps at (col, row + 1).
+	print round(kobt[KOB_OBT_INC], prec)		+ sps at (col, row + 2).
+	print round(kobt[KOB_OBT_ECC], prec)		+ sps at (col, row + 3).
+	print round(kobt[KOB_OBT_SMAJA], prec)		+ sps at (col, row + 4).
+	print round(kobt[KOB_OBT_SMINA], prec)		+ sps at (col, row + 5).
+	print round(kobt[KOB_OBT_LAN], prec)		+ sps at (col, row + 6).
+	print round(kobt[KOB_OBT_APE], prec)		+ sps at (col, row + 7).
+	print kob_fmt_time(kobt[KOB_OBT_PERIOD])	+ sps at (col, row + 8).
+	print kobt[KOB_OBT_ORIGIN]:NAME				+ sps at (col, row + 9). 
+}
+
+// -----------------------------------------------------------------------------
 // Demo: display the orbital parameters of the current vessel.
 function kob_demo_obt_params_of_current_vessel {
 	clearscreen.
@@ -544,27 +613,21 @@ function kob_demo_obt_params_of_current_vessel {
 	print "                                           "+sps at (0, 4).
 	print "by Lib" at (col1, 4).
 	print "by KOS" at (col2, 4).
-	print "err(max)" at (col3, 4).
-	print "err(cur)" at (col4, 4).
-	print "    Is hyperbolic:                         "+sps at (0, 5).
-	print "        Periapsis:                         "+sps at (0, 6).
-	print "         Apoapsis:                         "+sps at (0, 7).
-	print "      Inclination:                         "+sps at (0, 8).
-	print "     Eccentricity:                         "+sps at (0, 9).
-	print "  Semi-major axis:                         "+sps at (0,10).
-	print "  Semi-minor axis:                         "+sps at (0,11).
-	print "              LAN:                         "+sps at (0,12).
-	print "   Argument of PE:                         "+sps at (0,13).
-	print "     True Anomaly:                         "+sps at (0,14).
-	print "   Orbital period:                         "+sps at (0,15).
-	print "           Origin:                         "+sps at (0,16).
-	print "Sp.orbital energy:                         "+sps at (0,17).
-	print "Sp. ang. momentum:                         "+sps at (0,18).
+	print "        Periapsis:                         "+sps at (0, 5).
+	print "         Apoapsis:                         "+sps at (0, 6).
+	print "      Inclination:                         "+sps at (0, 7).
+	print "     Eccentricity:                         "+sps at (0, 8).
+	print "  Semi-major axis:                         "+sps at (0, 9).
+	print "  Semi-minor axis:                         "+sps at (0,10).
+	print "              LAN:                         "+sps at (0,11).
+	print "   Argument of PE:                         "+sps at (0,12).
+	print "   Orbital period:                         "+sps at (0,13).
+	print "           Origin:                         "+sps at (0,14).
+	print "-------------------------------------------"+sps at (0,15).
+	print " Press AG9 to exit. If AG is not working   "+sps at (0,16).
+	print " check the kOS window it must be unfocused."+sps at (0,17).
+	print " AG is not working in the map mode.        "+sps at (0,18).
 	print "-------------------------------------------"+sps at (0,19).
-	print " Press AG9 to exit. If AG is not working   "+sps at (0,20).
-	print " check the kOS window it must be unfocused."+sps at (0,21).
-	print " AG is not working in the map mode.        "+sps at (0,22).
-	print "-------------------------------------------"+sps at (0,23).
 	set ag9 to false.
 	
 	// Don't use the locks cuz is possible to face inconsistent state at calculation
@@ -582,12 +645,12 @@ function kob_demo_obt_params_of_current_vessel {
 	//set origin to v(0,0,0).
 	local lock edge to kosOrbit:apoapsis + body:radius.
 	local drawAngularMomentum is VecDrawArgs(origin, v(1,0,0), rgb(1,0,0), "Angular Momentum", 1, true).
-	//local drawNodeVector is VecDrawArgs(origin, v(1,0,0), rgb(0,1,0), "Ascending node", 1, true).
+	local drawNodeVector is VecDrawArgs(origin, v(1,0,0), rgb(0,1,0), "Ascending node", 1, true).
 	local drawEccVector is VecDrawArgs(origin, v(1,0,0), rgb(0,0,1), "Eccentricity vector", 1, true).
 	
-	//local xAxis is VECDRAWARGS(origin , V(edge,0,0), RGB(1.0,0.5,0.5), "X axis", 1, TRUE ).
-	//local yAxis is VECDRAWARGS(origin, V(0,edge,0), RGB(0.5,1.0,0.5), "Y axis", 1, TRUE ).
-	//local zAxis is VECDRAWARGS(origin, V(0,0,edge), RGB(0.5,0.5,1.0), "Z axis", 1, TRUE ).
+	local xAxis is VECDRAWARGS(origin , V(edge,0,0), RGB(1.0,0.5,0.5), "X axis", 1, TRUE ).
+	local yAxis is VECDRAWARGS(origin, V(0,edge,0), RGB(0.5,1.0,0.5), "Y axis", 1, TRUE ).
+	local zAxis is VECDRAWARGS(origin, V(0,0,edge), RGB(0.5,0.5,1.0), "Z axis", 1, TRUE ).
 	
 		
 	local prec is 4. // precision of the rounding
@@ -600,109 +663,37 @@ function kob_demo_obt_params_of_current_vessel {
 	    local myPosition is ship:position - ship:body:position.
 	    local myVelocity is velocity:orbit.
 	    local myOrbit is kob_obt_from_pos_and_vel(myPosition, myVelocity, body).
+		local myOrbitByKOS is kob_obt_initBy_kos_body(ship).
 	
-	    set drawAngularMomentum:vec to myOrbit[KOB_OBT_SP_ANG_MOMENTUM]:normalized * edge.
+		local samVec to kob_obt_get_samVec_pv(myPosition, myVelocity).
+	    //set drawAngularMomentum:vec to myOrbit[KOB_OBT_SP_ANG_MOMENTUM]:normalized * edge.
+		set drawAngularMomentum:vec to samVec:normalized * edge.
 	    set drawAngularMomentum:start to origin.
-	    // WARN: nodeVec was in old version (Ascending Node)
-	    //set drawNodeVector:vec to v(nodeVec:x, nodeVec:z, nodeVec:y) * edge.
-	    //set drawNodeVector:start to origin.
+		
+		local nodeVec to kob_obt_get_nodeVec_pv(myPosition, myVelocity).
+	    set drawNodeVector:vec to nodeVec * edge.
+	    set drawNodeVector:start to origin.
 	    
-	    local eVec to kob_body_eccentricityv_from_pv(myPosition, myVelocity, body).
-	    //set drawEccVector:vec to eVec.
-	    //set drawEccVector:start to origin.
-	    // WARN: eVec was in old version (Eccentricity)
-	    //set drawEccVector:vec to v(eVec:x, eVec:z, eVec:y):normalized * (kosOrbit:periapsis + body:radius).
+	    local eVec to kob_obt_get_eccVec_pv(myPosition, myVelocity, body).
 	    set drawEccVector:vec to eVec:normalized * (kosOrbit:periapsis + body:radius).
 	    set drawEccVector:start to origin.
 	    
-	    //set xAxis:start to origin.
-	    //set yAxis:start to origin.
-	    //set zAxis:start to origin.
+	    set xAxis:start to origin.
+	    set yAxis:start to origin.
+	    set zAxis:start to origin.
+
 	    
 	    local row is 5.
-		local dummy is "".
-		local err is 0.
-			
-	    set dummy to "N". if myOrbit[KOB_OBT_HYPERBOLIC] { set dummy to "Y". }
-	    print dummy at(col1, row).
-	    set dummy to "N". if kosOrbit:ECCENTRICITY >= 1 { set dummy to "Y". }
-	    print dummy at(col2, row).
-	    set row to row + 1.
-
-		set err to abs(myOrbit[KOB_OBT_PE] - kosOrbit:PERIAPSIS).
-		if err > errPeriapsis { set errPeriapsis to err. }  	
-	    print round(myOrbit[KOB_OBT_PE], prec) + sps at (col1, row).
-	    print round(kosOrbit:PERIAPSIS, prec) + sps at (col2, row).
-	    print round(errPeriapsis, prec) + sps at (col3, row).
-	    print round(err, prec) + sps at (col4, row).
-	    set row to row + 1.
-	
-		set err to abs(myOrbit[KOB_OBT_AP] - kosOrbit:APOAPSIS).
-		if err > errApoapsis { set errApoapsis to err. }
-	    print round(myOrbit[KOB_OBT_AP], prec) + sps at (col1, row).
-	    print round(kosOrbit:APOAPSIS, prec) + sps at (col2, row).
-	    print round(errApoapsis, prec) + sps at (col3, row).
-	    print round(err, prec) + sps at (col4, row).
-	    set row to row + 1.
-	
-	    print round(myOrbit[KOB_OBT_INCL], prec) + sps at (col1, row).
-	    print round(kosOrbit:INCLINATION, prec) + sps at (col2, row).
-	    set row to row + 1.
-	
-	    print round(myOrbit[KOB_OBT_ECC], prec) + sps at (col1, row).
-	    print round(kosOrbit:ECCENTRICITY, prec) + sps at (col2, row).
-	    set row to row + 1.
-	
-		set err to abs(myOrbit[KOB_OBT_SEMIMAJOR_AXIS] - kosOrbit:SEMIMAJORAXIS).
-		if err > errSemiMajorAxis { set errSemiMajorAxis to err. }
-	    print round(myOrbit[KOB_OBT_SEMIMAJOR_AXIS], prec) + sps at (col1, row).
-	    print round(kosOrbit:SEMIMAJORAXIS, prec) + sps at (col2, row).
-	    print round(errSemiMajorAxis, prec) + sps at (col3, row).
-	    print round(err, prec) + sps at (col4, row).
-	    set row to row + 1.
-	
-		set err to abs(myOrbit[KOB_OBT_SEMIMINOR_AXIS] - kosOrbit:SEMIMINORAXIS).
-		if err > errSemiMinorAxis { set errSemiMinorAxis to err. }
-	    print round(myOrbit[KOB_OBT_SEMIMINOR_AXIS], prec) + sps at (col1, row).
-	    print round(kosOrbit:SEMIMINORAXIS, prec) + sps at (col2, row).
-	    print round(errSemiMinorAxis, prec) + sps at (col3, row).
-	    print round(err, prec) + sps at (col4, row).
-	    set row to row + 1.
-	
-	    print round(myOrbit[KOB_OBT_LAN], prec) + sps at (col1, row).
-	    print round(kosOrbit:LAN, prec) + sps at (col2, row).
-	    set row to row + 1.
-	
-	    print round(myOrbit[KOB_OBT_APE], prec) + sps at (col1, row).
-	    print round(kosOrbit:ARGUMENTOFPERIAPSIS, prec) + sps at (col2, row).
-	    set row to row + 1.
-	
-	    print round(myOrbit[KOB_OBT_TRUE_ANOMALY], prec) + sps at (col1, row).
-	    print round(kosOrbit:TRUEANOMALY, prec) + sps at (col2, row).
-	    set row to row + 1.
-	
-	    print kob_fmt_time(myOrbit[KOB_OBT_PERIOD]) + sps at (col1, row).
-	    print kob_fmt_time(kosOrbit:PERIOD) + sps at (col2, row).
-	    set row to row + 1.
-	
-	    print myOrbit[KOB_OBT_ORIGIN]:NAME + sps at(col1, row).
-	    print "---" at (col2, row).
-	    set row to row + 1.
-	
-	    print round(myOrbit[KOB_OBT_ENERGY], prec) + sps at(col1, row).
-	    print "---" at (col2, row).
-	    set row to row + 1.
-	
-	    print round(myOrbit[KOB_OBT_SP_ANG_MOMENTUM]:mag, prec) + sps at(col1, row).
-	    print "---" at (col2, row).
-	    set row to row + 1.
+		kob_obt_print_at(col1, row, myOrbit).
+		kob_obt_print_at(col2, row, myOrbitByKOS).
 	    
 	    wait 1.
 	}
 	set drawAngularMomentum:show to false.
-	//set drawNodeVector:show to false.
+	set drawNodeVector:show to false.
 	set drawEccVector:show to false.
-	//set xAxis:show to false.
-	//set yAxis:show to false.
-	//set zAxis:show to false.
+	set xAxis:show to false.
+	set yAxis:show to false.
+	set zAxis:show to false.
 }
+

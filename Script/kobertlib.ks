@@ -51,7 +51,7 @@ function kob_obt_empty {
 // Initialize an orbit structure using orbitable object instance.
 // Param1: instance of an orbitable object (celestial body or vessel)
 // Return: initialized orbit structure
-function kob_obt_initBy_kos_body {
+function kob_obt_init_byKosBody {
 	declare local parameter tgt.
 	if not tgt:istype("Orbitable") {
 		kob_print_error("Unexpected type: " + tgt:typename()).
@@ -84,7 +84,7 @@ function kob_obt_initBy_kos_body {
 // Based on: http://www.braeunig.us/space/interpl.htm
 // Eccentricity vector, Eq. 5.23
 //
-function kob_obt_get_eccVec_pv {
+function kob_obt_get_eccVec_byPV {
     declare local parameter posVec.
     declare local parameter velVec.
     declare local parameter originBody.
@@ -96,112 +96,105 @@ function kob_obt_get_eccVec_pv {
 }
 
 // -----------------------------------------------------------------------------
-// Get specific angular momentum vector from position and velocity vectors
+// Get specific angular momentum vector using position and velocity vectors
 // (Eq. 5.21)
 // Param1: position vector
 // Param2: velocity vector
 // Return: vector of specific angular momentum
-function kob_obt_get_samVec_pv {
+function kob_obt_get_samVec_byPV {
 	declare local parameter posVec.
 	declare local parameter velVec.
 	return vcrs(posVec, velVec).	
 }
 
 // -----------------------------------------------------------------------------
-// Get vector of ascending/descending nodes from position and velocity vectors
+// Get vector of ascending/descending nodes using vector of specific angular momentum
+// (Eq. 5.22)
+// Param1: vector of specific angular momentum
+// Return: vector of ascending/descending nodes
+function kob_obt_get_nodeVec_bySamVec {
+    declare local parameter samVec.
+    return vcrs(v(0, 1, 0), samVec):normalized.    
+}
+
+// -----------------------------------------------------------------------------
+// Get vector of ascending/descending nodes using position and velocity vectors
 // (Eq. 5.22)
 // Param1: position vector
 // Param2: velocity vector
 // Return: vector of ascending/descending nodes
-function kob_obt_get_nodeVec_pv {
+function kob_obt_get_nodeVec_byPV {
 	declare local parameter posVec.
 	declare local parameter velVec.
-	local samVec is kob_obt_get_samVec_pv(posVec, velVec).
-	return vcrs(v(0, 1, 0), samVec):normalized.
+	local samVec is kob_obt_get_samVec_byPV(posVec, velVec).
+	return kob_obt_get_nodeVec_bySamVec(samVec).
 }
 
+// -----------------------------------------------------------------------------
+// Get orbit inclination using vector of specific angular momentum
+// (Eq. 5.26)
+// Param1: vector of specific angular momentum
+// Return: orbit inclination degrees
+function kob_obt_get_inclination_bySamVec {
+	declare local parameter samVec.
+	return arccos(-samVec:y / samVec:mag).
+}
 
 // -----------------------------------------------------------------------------
-// Fill the orbit params structure from position and velocity vectors.
+// Get orbit inclination using position and velocity vectors
+// Param1: position vector
+// Param2: velocity vector
+// Return: orbit inclination degrees
+function kob_obt_get_inclination_byPV {
+	declare local parameter posVec, velVec.
+	local samVec is kob_obt_get_samVec_byPV(posVec, velVec).
+	return kob_obt_get_inclination_bySamVec(samVec).
+}
+
+// -----------------------------------------------------------------------------
+// Initialize an orbit structure using position and velocity vectors.
 // Param1 - position vector
 // Param2 - velocity vector
 // Param3 - the body of origin
 // Return: initialized orbit structure
-// 
-// The equations mostly from this page (based on):
-//
-//      http://www.braeunig.us/space/index.htm#elements
-//
-// NOTE: Just one very important moment.
-// We have many great formulae from the site.
-// But all of them  consider that the Z-axis is vertical.
-// Actually the Y-axis is vertical ingame.
-//
-//      http://ksp-kos.github.io/KOS_DOC/math/ref_frame.html
-//
-// To avoid any difficulties just swap Y and Z component before calculations
-//
-// TODO: Deprecated, to remove, rename or refactor
-function kob_obt_from_pos_and_vel {
-	declare local parameter posVec.
-	declare local parameter velVec.
-	declare local parameter originBody.
+function kob_obt_init_byPV {
+    declare local parameter posVec.
+    declare local parameter velVec.
+    declare local parameter originBody.
 
-	// Swap Y and Z coordinate
-	set posVec to v(posVec:x, posVec:z, posVec:y).
-	set velVec to v(velVec:x, velVec:z, velVec:y).
-	local mu is originBody:mu.
-	local r is posVec:mag. // Radius
-	local v is velVec:mag. // Scalar velocity
-	local h is vcrs(posVec, velVec). // Specific angular momentum, Eq. 5.21
-	local i is arccos(h:z / h:mag). // Inclination, Eq. 5.26
-	local nodeVec is v(-1 * h:y, h:x, 0):normalized. // Ascending node, Eq. 5.22
-	local hyperbolic is false.
-	// Semi-major axis, Eq. 5.24
-	local a is 1 / (2 / r - v * v / mu).
-	
-    // Eccentricity vector, Eq. 5.23
-	local eVec is (1 / mu) * (((v * v - mu / r) * posVec) - vdot(posVec, velVec) * velVec).
-	local e is eVec:mag. // Eccentricity, Eq. 5.25
-	local b is 0.
-	if e >= 1 {
-	    set hyperbolic to true.
-	    set b to a * sqrt(e * e - 1). // Semi-minor axis
-	} else {
-	    set b to a * sqrt(1 - e * e). // Semi-minor axis
-	}
-	
-	// Note: the nodeVec is unit vector. Dividing by magnitude isn't needed.
-
-	// Longitude of ascending node, Eq. 5.27
-	local lan is arccos(nodeVec:x) + arccos(solarprimevector:x).
-	
-	if nodeVec:y < 0 { set lan to 360 - lan. }
-	local aop is arccos(vdot(nodeVec, eVec) / e). // Argument of periapsis, Eq. 5.28
-	if eVec:z < 0 { set aop to 360 - aop. }
-	
-	local trueAnomaly is arccos((eVec * posVec) / (e * r)). // True anomaly, Eq. 5.29
-	if posVec * velVec < 0 { set trueAnomaly to 360 - trueAnomaly. }
-
-	local retval is kob_obt_empty.
-	set retval[KOB_OBT_ORIGIN] to originBody.
-	set retval[KOB_OBT_INC] to i.
-	set retval[KOB_OBT_ECC] to e.
-	set retval[KOB_OBT_SMAJA] to a.
-	set retval[KOB_OBT_SMINA] to b.
-	set retval[KOB_OBT_PE] to a * (1 - e) - originBody:radius.
-	set retval[KOB_OBT_AP] to a * (1 + e) - originBody:radius.
-	set retval[KOB_OBT_APE] to aop.
-	set retval[KOB_OBT_LAN] to lan.
-	set retval[KOB_OBT_PERIOD] to constant():PI * 2 * sqrt(abs(a)^3 / mu).
-
-	// TODO: move to other place
-	// http://en.wikipedia.org/wiki/Specific_orbital_energy
-	//set retval[KOB_OBT_ENERGY] to -1 * mu / (a * 2).
-	// http://en.wikipedia.org/wiki/Orbital_period
-	//set retval[KOB_OBT_TRUE_ANOMALY] to trueAnomaly.
-	//set retval[KOB_OBT_SP_ANG_MOMENTUM] to v(h:x, h:z, h:y). // swap Y/Z
-	return retval.
+    local mu is originBody:mu.
+    local r is posVec:mag. // Radius
+    local v is velVec:mag. // Scalar velocity
+    local h is kob_obt_get_samVec_byPV(posVec, velVec).
+    local i is kob_obt_get_inclination_bySamVec(h).
+    local nodeVec is kob_obt_get_nodeVec_bySamVec(h).
+    local eccVec is kob_obt_get_eccVec_byPV(posVec, velVec, originBody).
+    local e is eccVec:mag.
+    local a is 1 / (2 / r - v * v / mu).
+    local b is 0.
+    if e >= 1 {
+        set b to a * sqrt(e * e - 1). // Semi-minor axis
+    } else {
+        set b to a * sqrt(1 - e * e). // Semi-minor axis
+    }
+    local aop is arccos(vdot(nodeVec, eccVec) / e).
+    local lan is vang(nodeVec, solarprimevector).
+    if eccVec:y < 0 {
+        set aop to 360 - aop.
+        set lan to 360 - lan.
+    }
+    local res is kob_obt_empty().
+    set res[KOB_OBT_ORIGIN] to originBody.
+    set res[KOB_OBT_INC] to i.
+    set res[KOB_OBT_ECC] to e.
+    set res[KOB_OBT_SMAJA] to a.
+    set res[KOB_OBT_SMINA] to b.
+    set res[KOB_OBT_PE] to a * (1 - e) - originBody:radius.
+    set res[KOB_OBT_AP] to a * (1 + e) - originBody:radius.
+    set res[KOB_OBT_APE] to aop.
+    set res[KOB_OBT_LAN] to lan.
+    set res[KOB_OBT_PERIOD] to constant():PI * 2 * sqrt(abs(a)^3 / mu).
+    return res.
 }
 
 // -----------------------------------------------------------------------------
@@ -584,13 +577,13 @@ function kob_obt_print_at {
 	local sps is "             ".
 
 	print round(kobt[KOB_OBT_PE], prec)			+ sps at (col, row).
-	print round(kobt[KOB_OBT_PE], prec)			+ sps at (col, row + 1).
+	print round(kobt[KOB_OBT_AP], prec)			+ sps at (col, row + 1).
 	print round(kobt[KOB_OBT_INC], prec)		+ sps at (col, row + 2).
 	print round(kobt[KOB_OBT_ECC], prec)		+ sps at (col, row + 3).
 	print round(kobt[KOB_OBT_SMAJA], prec)		+ sps at (col, row + 4).
 	print round(kobt[KOB_OBT_SMINA], prec)		+ sps at (col, row + 5).
-	print round(kobt[KOB_OBT_LAN], prec)		+ sps at (col, row + 6).
-	print round(kobt[KOB_OBT_APE], prec)		+ sps at (col, row + 7).
+	print round(kobt[KOB_OBT_APE], prec)		+ sps at (col, row + 6).
+	print round(kobt[KOB_OBT_LAN], prec)        + sps at (col, row + 7).
 	print kob_fmt_time(kobt[KOB_OBT_PERIOD])	+ sps at (col, row + 8).
 	print kobt[KOB_OBT_ORIGIN]:NAME				+ sps at (col, row + 9). 
 }
@@ -611,16 +604,16 @@ function kob_demo_obt_params_of_current_vessel {
 	print " Vessel: " + ship:name + "                 "+sps at (0, 2).
 	print "==========================================="+sps at (0, 3).
 	print "                                           "+sps at (0, 4).
-	print "by Lib" at (col1, 4).
-	print "by KOS" at (col2, 4).
+	print "by KOB(PV)" at (col1, 4).
+	print "by KOS"  at (col2, 4).
 	print "        Periapsis:                         "+sps at (0, 5).
 	print "         Apoapsis:                         "+sps at (0, 6).
 	print "      Inclination:                         "+sps at (0, 7).
 	print "     Eccentricity:                         "+sps at (0, 8).
 	print "  Semi-major axis:                         "+sps at (0, 9).
 	print "  Semi-minor axis:                         "+sps at (0,10).
-	print "              LAN:                         "+sps at (0,11).
-	print "   Argument of PE:                         "+sps at (0,12).
+	print "   Argument of PE:                         "+sps at (0,11).
+    print "              LAN:                         "+sps at (0,12).
 	print "   Orbital period:                         "+sps at (0,13).
 	print "           Origin:                         "+sps at (0,14).
 	print "-------------------------------------------"+sps at (0,15).
@@ -647,36 +640,33 @@ function kob_demo_obt_params_of_current_vessel {
 	local drawAngularMomentum is VecDrawArgs(origin, v(1,0,0), rgb(1,0,0), "Angular Momentum", 1, true).
 	local drawNodeVector is VecDrawArgs(origin, v(1,0,0), rgb(0,1,0), "Ascending node", 1, true).
 	local drawEccVector is VecDrawArgs(origin, v(1,0,0), rgb(0,0,1), "Eccentricity vector", 1, true).
+	local drawSolPrime is VecDrawArgs(origin, solarprimevector, rgb(1, 1, 0), "Solar Prime vector", 1, true).
 	
 	local xAxis is VECDRAWARGS(origin , V(edge,0,0), RGB(1.0,0.5,0.5), "X axis", 1, TRUE ).
 	local yAxis is VECDRAWARGS(origin, V(0,edge,0), RGB(0.5,1.0,0.5), "Y axis", 1, TRUE ).
 	local zAxis is VECDRAWARGS(origin, V(0,0,edge), RGB(0.5,0.5,1.0), "Z axis", 1, TRUE ).
 	
-		
-	local prec is 4. // precision of the rounding
-	
-	local errSemiMajorAxis is 0.
-	local errSemiMinorAxis is 0.
-	local errPeriapsis is 0.
-	local errApoapsis is 0.
 	until exit=1 {
 	    local myPosition is ship:position - ship:body:position.
 	    local myVelocity is velocity:orbit.
-	    local myOrbit is kob_obt_from_pos_and_vel(myPosition, myVelocity, body).
-		local myOrbitByKOS is kob_obt_initBy_kos_body(ship).
+        local myOrbit is kob_obt_init_byPV(myPosition, myVelocity, body).
+		local myOrbitByKOS is kob_obt_init_byKosBody(ship).
 	
-		local samVec to kob_obt_get_samVec_pv(myPosition, myVelocity).
+		local samVec to kob_obt_get_samVec_byPV(myPosition, myVelocity).
 	    //set drawAngularMomentum:vec to myOrbit[KOB_OBT_SP_ANG_MOMENTUM]:normalized * edge.
 		set drawAngularMomentum:vec to samVec:normalized * edge.
 	    set drawAngularMomentum:start to origin.
 		
-		local nodeVec to kob_obt_get_nodeVec_pv(myPosition, myVelocity).
+		local nodeVec to kob_obt_get_nodeVec_byPV(myPosition, myVelocity).
 	    set drawNodeVector:vec to nodeVec * edge.
 	    set drawNodeVector:start to origin.
 	    
-	    local eVec to kob_obt_get_eccVec_pv(myPosition, myVelocity, body).
+	    local eVec to kob_obt_get_eccVec_byPV(myPosition, myVelocity, body).
 	    set drawEccVector:vec to eVec:normalized * (kosOrbit:periapsis + body:radius).
 	    set drawEccVector:start to origin.
+	    
+	    set drawSolPrime:vec to solarprimevector * edge * 2.
+	    set drawSolPrime:start to origin.
 	    
 	    set xAxis:start to origin.
 	    set yAxis:start to origin.
@@ -692,6 +682,7 @@ function kob_demo_obt_params_of_current_vessel {
 	set drawAngularMomentum:show to false.
 	set drawNodeVector:show to false.
 	set drawEccVector:show to false.
+	set drawSolPrime:show to false.
 	set xAxis:show to false.
 	set yAxis:show to false.
 	set zAxis:show to false.

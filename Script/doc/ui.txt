@@ -1,0 +1,4 @@
+ | ETA|BODY| AP | PE |ECC| SMA|LAN|APE|INC| PERIOD|
+#| 22m|Kerb|239T|892K|.52|201G|128| 59|175| 14M15D|
+>|1.5d|Mun | 12K| 99M|>99|  8K|359|  2|  3|       |
+ |    |Minm| 14M|

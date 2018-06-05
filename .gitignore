@@ -1,4 +1,10 @@
-@thumbs/
-SPH/
-VAB/
-~*
+*.vpp.*
+*.vpp~*
+*.dia\~
+*.versionsBackup
+.project
+.settings/
+.classpath
+*.iml
+.idea/
+target/

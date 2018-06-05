@@ -1,0 +1,8 @@
+{
+    "entries": [
+		"LV-909", 60,
+		"LV-T30", 240,
+		"LV-T45", 215,
+    ],
+    "$type": "kOS.Safe.Encapsulation.Lexicon"
+}

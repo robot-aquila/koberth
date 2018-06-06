@@ -8,8 +8,9 @@ import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Part;
 import krpc.client.services.SpaceCenter.Vessel;
 import ru.prolib.kobert.lib.KOBAbstractVesselImpl;
+import ru.prolib.kobert.lib.KOBVesselStage;
 
-public class KRPCVesselStage extends KOBAbstractVesselImpl {
+public class KRPCVesselStage extends KOBAbstractVesselImpl implements KOBVesselStage {
 	private final Vessel vessel;
 	private final KRPCPartSelector isSignificant, isEngine, isFuelTank, isLoad;
 	private final List<Part> allParts, engines, fuelTanks, stageLoad;

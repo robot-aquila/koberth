@@ -7,9 +7,9 @@ import krpc.client.RPCException;
 import krpc.client.services.SpaceCenter.Engine;
 import krpc.client.services.SpaceCenter.Part;
 import krpc.client.services.SpaceCenter.Vessel;
-import ru.prolib.kobert.lib.KOBVesselStage;
+import ru.prolib.kobert.lib.KOBAbstractVesselImpl;
 
-public class KRPCVesselStage implements KOBVesselStage {
+public class KRPCVesselStage extends KOBAbstractVesselImpl {
 	private final Vessel vessel;
 	private final KRPCPartSelector isSignificant, isEngine, isFuelTank, isLoad;
 	private final List<Part> allParts, engines, fuelTanks, stageLoad;
@@ -74,15 +74,6 @@ public class KRPCVesselStage implements KOBVesselStage {
 	
 	public List<Part> getStageLoad() {
 		return stageLoad;
-	}
-
-	@Override
-	public double getVacuumDeltaV() {
-		double dryMass = getDryMass();
-		if ( dryMass <= 0 ) {
-			return 0;
-		}
-		return Math.log(getMass() / dryMass) * getVacuumISP() * 9.81d;
 	}
 
 	@Override

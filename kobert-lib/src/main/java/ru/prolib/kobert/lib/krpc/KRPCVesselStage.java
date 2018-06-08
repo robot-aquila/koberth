@@ -33,6 +33,10 @@ public class KRPCVesselStage extends KOBAbstractVesselImpl implements KOBVesselS
 		refresh();
 	}
 	
+	public Vessel getKRPCVessel() {
+		return vessel;
+	}
+	
 	/**
 	 * Refresh parts data.
 	 */

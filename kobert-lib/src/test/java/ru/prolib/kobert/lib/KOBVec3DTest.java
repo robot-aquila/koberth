@@ -2,6 +2,7 @@ package ru.prolib.kobert.lib;
 
 import static org.junit.Assert.*;
 
+import org.javatuples.Triplet;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -22,6 +23,42 @@ public class KOBVec3DTest {
 		assertEquals(expected.getX(), actual.getX(), epsilon);
 		assertEquals(expected.getY(), actual.getY(), epsilon);
 		assertEquals(expected.getZ(), actual.getZ(), epsilon);
+	}
+	
+	@Test
+	public void testVec_1Triplet() {
+		KOBVec3D actual = KOBVec3D.vec(new Triplet<>(5d, -10d, 96d));
+		
+		KOBVec3D expected = new KOBVec3D(5, -10, 96);
+		assertVectorEquals(expected, actual, 1E-10);
+	}
+	
+	@Test
+	public void testVec_3D() {
+		KOBVec3D actual = KOBVec3D.vec(-17.5, 24.1, -85.9);
+		
+		KOBVec3D expected = new KOBVec3D(-17.5, 24.1, -85.9);
+		assertVectorEquals(expected, actual, 1E-10);
+	}
+	
+	@Test
+	public void testTriplet_1Vec() {
+		double epsilon = 1E-10;
+		Triplet<Double, Double, Double> actual = KOBVec3D.triplet(new KOBVec3D(12, 24, 36));
+		
+		assertEquals(12, actual.getValue0(), epsilon);
+		assertEquals(24, actual.getValue1(), epsilon);
+		assertEquals(36, actual.getValue2(), epsilon);
+	}
+	
+	@Test
+	public void testTriplet_3D() {
+		double epsilon = 1E-10;
+		Triplet<Double, Double, Double> actual = KOBVec3D.triplet(12, 24, 36);
+
+		assertEquals(12, actual.getValue0(), epsilon);
+		assertEquals(24, actual.getValue1(), epsilon);
+		assertEquals(36, actual.getValue2(), epsilon);
 	}
 	
 	@Test
@@ -180,6 +217,19 @@ public class KOBVec3DTest {
 		String expected = "KOBVec3D[x=5.0,y=-7.0,z=12.0]";
 		
 		assertEquals(expected, u.toString());
+	}
+	
+	@Test
+	public void testEquals() {
+		KOBVec3D u = new KOBVec3D(5, -7, 12);
+		
+		assertTrue(u.equals(u));
+		assertFalse(u.equals(null));
+		assertFalse(u.equals(this));
+		assertTrue(u.equals(new KOBVec3D(5, -7, 12)));
+		assertFalse(u.equals(new KOBVec3D(8, -7, 12)));
+		assertFalse(u.equals(new KOBVec3D(5,  8, 12)));
+		assertFalse(u.equals(new KOBVec3D(5, -7, 8)));
 	}
 
 }

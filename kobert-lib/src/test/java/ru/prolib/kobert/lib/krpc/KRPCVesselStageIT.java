@@ -10,41 +10,26 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import krpc.client.Connection;
-import krpc.client.services.KRPC;
-import krpc.client.services.KRPC.GameScene;
-import krpc.client.services.SpaceCenter;
 import krpc.client.services.SpaceCenter.Part;
 import krpc.client.services.SpaceCenter.Vessel;
 import krpc.client.services.SpaceCenter.VesselSituation;
 
 public class KRPCVesselStageIT {
-	private static Connection krpcConnection;
-	private static KRPC krpc;
-	private static SpaceCenter ksc;
+	private static KRPCFacade krpcf;
 	private static Vessel vessel;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		krpcConnection = Connection.newInstance();
-		krpc = KRPC.newInstance(krpcConnection);
-		if ( krpc.getCurrentGameScene() != GameScene.FLIGHT ) {
-			throw new IllegalStateException("Should be in flight but: " + krpc.getCurrentGameScene());
-		}
-		ksc = SpaceCenter.newInstance(krpcConnection);
-		vessel = ksc.getActiveVessel();
-		if ( ! vessel.getName().equals("Brahe-1") ) {
-			throw new IllegalStateException("Invalid vessel is currently loaded: " + vessel.getName());
-		}
-		if ( vessel.getSituation() != VesselSituation.PRE_LAUNCH ) {
-			throw new IllegalStateException("Invalid current situation: " + vessel.getSituation());
-		}
+		krpcf = new KRPCFacadeImpl();
+		krpcf.assertActiveVesselName("Brahe-1");
+		krpcf.assertActiveVesselSituation(VesselSituation.PRE_LAUNCH);
+		vessel = krpcf.getActiveVessel();
 	}
 	
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		if ( krpcConnection != null ) {
-			krpcConnection.close();
+		if ( krpcf != null ) {
+			krpcf.close();
 		}
 	}
 	

@@ -1,10 +1,28 @@
 package ru.prolib.kobert.lib;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.javatuples.Triplet;
 
 public class KOBVec3D {
 	private final double x, y, z;
+	
+	public static KOBVec3D vec(Triplet<Double, Double, Double> triplet) {
+		return new KOBVec3D(triplet.getValue0(), triplet.getValue1(), triplet.getValue2());
+	}
+	
+	public static KOBVec3D vec(double x, double y, double z) {
+		return new KOBVec3D(x, y, z);
+	}
+	
+	public static Triplet<Double, Double, Double> triplet(KOBVec3D vector) {
+		return new Triplet<>(vector.getX(), vector.getY(), vector.getZ());
+	}
+	
+	public static Triplet<Double, Double, Double> triplet(double x, double y, double z) {
+		return new Triplet<>(x, y, z);
+	}
 	
 	public KOBVec3D(double x, double y, double z) {
 		this.x = x;
@@ -83,6 +101,22 @@ public class KOBVec3D {
 				.append("y", y)
 				.append("z", z)
 				.build();
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if ( other == this ) {
+			return true;
+		}
+		if ( other == null || other.getClass() != KOBVec3D.class ) {
+			return false;
+		}
+		KOBVec3D o = (KOBVec3D) other;
+		return new EqualsBuilder()
+			.append(o.x, x)
+			.append(o.y, y)
+			.append(o.z, z)
+			.isEquals();
 	}
 
 }
